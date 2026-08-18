@@ -1,0 +1,43 @@
+{
+  "name": "opencode-plugin-dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20.18.0" },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/danzilberdan/devcontainers/opencode:0": {},
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  },
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway",
+    "-p", "2222:2222"
+  ],
+  "workspaceFolder": "/workspaces/opencode-graph-plugin",
+  "mounts": [
+    "source=opencode-plugin-chats,target=/home/vscode/.local/share/opencode,type=volume",
+    "source=opencode-plugin-state,target=/home/vscode/.local/state/opencode,type=volume"
+  ],
+  "postCreateCommand": "echo 'vscode:vscode' | sudo chpasswd && npm install -g bun && git config --global user.name '${localEnv:GIT_AUTHOR_NAME}' && git config --global user.email '${localEnv:GIT_AUTHOR_EMAIL}' && cd /workspaces/opencode-graph-plugin && bun install && mkdir -p ~/.config/opencode ~/.local/share/opencode ~/.local/state/opencode && sudo chown -R vscode:vscode ~/.config/opencode ~/.local/share/opencode ~/.local/state/opencode && printf '{\"$schema\":\"https://opencode.ai/config.json\",\"provider\":{\"deepseek\":{\"options\":{\"baseURL\":\"https://api.deepseek.com/v1\",\"apiKey\":\"%s\"}},\"lmstudio\":{\"npm\":\"@ai-sdk/openai-compatible\",\"name\":\"LM Studio (local)\",\"options\":{\"baseURL\":\"http://host.docker.internal:1234/v1\"},\"models\":{\"google/gemma-4-26b-a4b-qat\":{\"name\":\"Gemma 4 26B (local)\"},\"qwen2.5-coder-14b-instruct\":{\"name\":\"Qwen2.5 Coder 14B (local)\"},\"qwen/qwen3.8-27b\":{\"name\":\"qwen/qwen3.8-27b (q2, local)\"}, \"qwen/qwen3.8-9b\":{\"name\":\"qwen/qwen3.8-9b\"}, \"text-embedding-nomic-embed-text-v1.5\":{\"name\":\"Nomic Embed (local)\"}}}},\"defaultProvider\":\"deepseek\"}\n' \"${DEEPSEEK_API_KEY}\" > ~/.config/opencode/config.json",
+  "postStartCommand": "cd /workspaces/opencode-graph-plugin",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "containerEnv": {
+    "DEEPSEEK_API_KEY": "${localEnv:DEEPSEEK_API_KEY}",
+    "OLLAMA_HOST": "http://host.docker.internal:11434",
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+    "GITHUB_USERNAME": "${localEnv:GITHUB_USERNAME}",
+    "GIT_AUTHOR_NAME": "${localEnv:GIT_AUTHOR_NAME}",
+    "GIT_AUTHOR_EMAIL": "${localEnv:GIT_AUTHOR_EMAIL}"
+  },
+  "remoteUser": "vscode"
+}
