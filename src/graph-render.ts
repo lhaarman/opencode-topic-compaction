@@ -30,12 +30,18 @@ const SCALE = 2
 // Message nodes are rounded rectangles sized to their content + metadata. The
 // canvas width is driven by the widest message and stays under 321 (in base
 // pixels) so the image fits opencode's panel without clipping.
-const MAX_TEXT_W = 205 * SCALE
+const MAX_TEXT_W = 197 * SCALE
 const PAD_X = 16 * SCALE
 const PAD_Y = 12 * SCALE
 const CONTENT_LH = 14 * SCALE
 const META_LH = 11 * SCALE
 const MARGIN = 40 * SCALE
+// The left margin hosts the "follows" lane, so it widens to fit the lane label;
+// the right margin shrinks by the same amount so the total canvas width stays
+// within the panel budget (2*MARGIN of margin in total).
+const LANE_PAD = 6 * SCALE
+const LANE_NODE_GAP = 10 * SCALE
+const MIN_RIGHT = 10 * SCALE
 const FONT_PX = FONT_SIZE * SCALE
 const META_PX = META_FONT_SIZE * SCALE
 
@@ -60,6 +66,16 @@ const HEADER_GAP = 3 * SCALE
 const ATTACH_GAP = 10 * SCALE
 const ATTACH_ROW_GAP = 14 * SCALE
 const ATTACH_FIRST_GAP = 29 * SCALE
+// Attached nodes are compact chips, so they use a smaller horizontal pad than
+// message nodes; that keeps per-item budgets large enough for a sibling row to
+// actually fit even when the group is wide.
+const ATTACH_PAD_X = 10 * SCALE
+// A group of attached nodes is laid out as one sibling row, so every node is
+// sized against a shared per-item budget (this keeps even a wide group on a
+// single row). Row packing below is only a safety net for oversized groups.
+const MIN_ATTACH_INNER = 40 * SCALE
+// Height of the vertical stub between the row spine and each attached node.
+const STUB_GAP = 12 * SCALE
 
 // pureimage needs a registered font to measure and draw text. The .ttf must
 // live next to the deployed plugin file.
@@ -174,7 +190,7 @@ function sizeAttachNode(ctx: PureImage.Context, node: GraphNode, maxInnerW: numb
   const innerW = Math.max(70, maxLineW)
   const lines = truncateLines(wrapped.map((l) => fitLine(ctx, l, innerW)), 25)
   const h = PAD_Y * 2 + HEADER_LH + HEADER_GAP + lines.length * CONTENT_LH
-  return { w: innerW + PAD_X * 2, h, lines }
+  return { w: innerW + ATTACH_PAD_X * 2, h, lines }
 }
 
 function rectBorderPoint(cx: number, cy: number, hw: number, hh: number, tx: number, ty: number): { x: number; y: number } {
@@ -248,9 +264,12 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
   measure.font = `${FONT_PX}px ${FONT_NAME}`
 
   // Layout: every message gets its own row, centered horizontally. Tool calls,
-  // files and subtasks are smaller rounded rectangles sitting side-by-side below
-  // their parent message. Canvas width is driven by the widest message so nothing
-  // clips; attached text reuses that width so it fits on one line.
+  // files and subtasks are smaller rounded rectangles sitting side-by-side in a
+  // single sibling row below their parent message, connected by a tree
+  // connector (trunk + spine + stubs). Message-to-message "follows" links ride
+  // a lane in the left margin. Canvas width is driven by the widest message so
+  // nothing clips; attached text wraps at a per-group budget so siblings fit
+  // their row.
   const msgNodes = nodes.filter((n) => isMessageKind(n.kind))
   const attached = nodes.filter((n) => !isMessageKind(n.kind))
   const pos = new Map<string, Pos>()
@@ -265,15 +284,27 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
   }
   const sizes = msgNodes.map((n) => sizeMessageNode(measure, n))
   const maxW = sizes.length > 0 ? Math.max(...sizes.map((s) => s.w)) : 160
-  const width = Math.max(MARGIN * 2, maxW + MARGIN * 2)
-  const availW = width - 2 * MARGIN
+  // Size the left margin around the widest follows label so the time text never
+  // runs under a message node; right margin absorbs the difference.
+  const laneLabelW = edges
+    .filter((e) => e.kind === "follows")
+    .reduce((acc, e) => Math.max(acc, measure.measureText(edgeLabel(e)).width), 0)
+  const laneX = Math.max(MARGIN / 2, laneLabelW / 2 + LANE_PAD)
+  const leftMargin = Math.max(MARGIN, laneX + laneLabelW / 2 + LANE_NODE_GAP)
+  const rightMargin = Math.max(MIN_RIGHT, 2 * MARGIN - leftMargin)
+  const width = Math.max(leftMargin + rightMargin, maxW + leftMargin + rightMargin)
+  const availW = width - leftMargin - rightMargin
 
-  // Size every attached node once (wrapping at the full message width), then
-  // pack each parent's group into rows that fit the available width.
+  // Size every attached node of a group against a shared per-item budget, so
+  // the whole sibling group fits on one row (same generation, same row). The
+  // budget shrinks the wrap width as the group grows; the row packing below
+  // still wraps as a safety net for groups too big even at the minimum width.
   type AttachedRow = { items: GraphNode[]; wmax: number; hmax: number; yOff: number }
   const attachSizes = new Map<string, { w: number; h: number; lines: string[] }>()
-  for (const list of byParent.values()) {
-    for (const a of list) attachSizes.set(a.id, sizeAttachNode(measure, a, availW - 2 * PAD_X))
+  for (const [parentId, list] of byParent) {
+    const n = list.length
+    const budgetInner = Math.max(MIN_ATTACH_INNER, (availW - (n - 1) * ATTACH_GAP) / n - 2 * ATTACH_PAD_X)
+    for (const a of list) attachSizes.set(a.id, sizeAttachNode(measure, a, budgetInner))
   }
   const attachLayout = new Map<string, AttachedRow[]>()
   const attachedBottom = new Map<string, number>()
@@ -313,7 +344,7 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
     if (!n) continue
     const s = sizes[i]!
     const h = s.h
-    pos.set(n.id, { x: width / 2, y: cursorY + h / 2, w: s.w, h })
+    pos.set(n.id, { x: leftMargin + availW / 2, y: cursorY + h / 2, w: s.w, h })
     // Reserve the full height of any attached group below this row.
     cursorY += h + (attachedBottom.get(n.id) ?? 0) + gap
   }
@@ -333,6 +364,33 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
     }
   }
 
+  // Connector geometry per parent group: a vertical trunk down from the
+  // parent's bottom-center, a horizontal spine just above each row, and one
+  // stub per child from the spine into the child's top-center.
+  type RowGeom = { spineY: number; left: number; right: number }
+  const connectors = new Map<string, { trunkX: number; rows: RowGeom[] }>()
+  const childSpine = new Map<string, number>()
+  for (const [parentId, rows] of attachLayout) {
+    const parent = pos.get(parentId)
+    if (!parent) continue
+    const geoms: RowGeom[] = []
+    for (const row of rows) {
+      let spineY = Infinity
+      let left = Infinity
+      let right = -Infinity
+      for (const a of row.items) {
+        const p = pos.get(a.id)
+        if (!p) continue
+        spineY = Math.min(spineY, p.y - p.h / 2 - STUB_GAP)
+        left = Math.min(left, p.x - p.w / 2)
+        right = Math.max(right, p.x + p.w / 2)
+      }
+      for (const a of row.items) childSpine.set(a.id, spineY)
+      geoms.push({ spineY, left, right })
+    }
+    connectors.set(parentId, { trunkX: parent.x, rows: geoms })
+  }
+
   let maxY = 0
   for (const p of pos.values()) maxY = Math.max(maxY, p.y + p.h / 2)
   const height = maxY + MARGIN
@@ -347,27 +405,82 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
   ctx.font = `${META_PX}px ${FONT_NAME}`
   ctx.textAlign = "center"
   ctx.textBaseline = "middle"
-  for (const e of edges) {
-    const s = pos.get(e.source)
-    const t = pos.get(e.target)
-    if (!s || !t) continue
-    const p1 = borderPoint(s, t.x, t.y)
-    const p2 = borderPoint(t, s.x, s.y)
-    ctx.strokeStyle = EDGE_COLORS[e.kind] || "#94a3b8"
-    ctx.beginPath()
-    ctx.moveTo(p1.x, p1.y)
-    ctx.lineTo(p2.x, p2.y)
-    ctx.stroke()
 
-    const label = edgeLabel(e)
-    const mx = (p1.x + p2.x) / 2
-    const my = (p1.y + p2.y) / 2
+  // Label drawn over an edge at (x, y) with a white backing box.
+  const drawLabel = (label: string, x: number, y: number): void => {
     const labelW = ctx.measureText(label).width
     const boxH = META_LH
     ctx.fillStyle = "#ffffff"
-    ctx.fillRect(mx - labelW / 2 - 3 * SCALE, my - boxH / 2, labelW + 6 * SCALE, boxH)
+    ctx.fillRect(x - labelW / 2 - 3 * SCALE, y - boxH / 2, labelW + 6 * SCALE, boxH)
     ctx.fillStyle = TEXT_COLOR
-    ctx.fillText(label, mx, my)
+    ctx.fillText(label, x, y)
+  }
+
+  // Message-to-message links ride a dedicated lane in the left margin so they
+  // never run along the same axis as (or get mistaken for) the attachment
+  // connectors. Orthogonal path: out of one message's left edge, down the
+  // lane, back into the next message's left edge. The lane is sized to the
+  // widest "follows HH:MM" label so the text never clips.
+  for (const e of edges) {
+    if (e.kind !== "follows") continue
+    const s = pos.get(e.source)
+    const t = pos.get(e.target)
+    if (!s || !t) continue
+    ctx.strokeStyle = EDGE_COLORS.follows
+    ctx.beginPath()
+    ctx.moveTo(s.x - s.w / 2, s.y)
+    ctx.lineTo(laneX, s.y)
+    ctx.lineTo(laneX, t.y)
+    ctx.lineTo(t.x - t.w / 2, t.y)
+    ctx.stroke()
+    drawLabel(edgeLabel(e), laneX, (s.y + t.y) / 2)
+  }
+
+  // Attachments hang off their parent with an orthogonal tree connector: one
+  // trunk from the parent, a spine above each row, and a stub into every child.
+  // The shared trunk/spine is neutral gray; each child's stub is drawn in its
+  // edge kind color so mixed groups (tools + files) stay readable.
+  const NEUTRAL = "#94a3b8"
+  const strokeLine = (color: string, x1: number, y1: number, x2: number, y2: number): void => {
+    ctx.strokeStyle = color
+    ctx.beginPath()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    ctx.stroke()
+  }
+  for (const [parentId, c] of connectors) {
+    const parent = pos.get(parentId)
+    if (!parent) continue
+    // Trunk: parent bottom-center down to the first row's spine, then on to
+    // each subsequent row's spine.
+    let yPrev = parent.y + parent.h / 2
+    for (const row of c.rows) {
+      strokeLine(NEUTRAL, c.trunkX, yPrev, c.trunkX, row.spineY)
+      strokeLine(NEUTRAL, row.left, row.spineY, row.right, row.spineY)
+      yPrev = row.spineY
+    }
+  }
+  for (const e of edges) {
+    if (e.kind === "follows") continue
+    const s = pos.get(e.source)
+    const t = pos.get(e.target)
+    if (!s || !t) continue
+    const c = connectors.get(e.source)
+    // Shared files can be referenced by messages other than the one they're
+    // laid out under; those get a plain straight line instead.
+    if (!c) {
+      const p1 = borderPoint(s, t.x, t.y)
+      const p2 = borderPoint(t, s.x, s.y)
+      strokeLine(EDGE_COLORS[e.kind] || NEUTRAL, p1.x, p1.y, p2.x, p2.y)
+      drawLabel(edgeLabel(e), (p1.x + p2.x) / 2, (p1.y + p2.y) / 2)
+      continue
+    }
+    // Draw the stub in the edge's color and label it at the stub's midpoint.
+    const p = pos.get(e.target)
+    const spineY = childSpine.get(e.target)
+    if (!p || spineY === undefined) continue
+    strokeLine(EDGE_COLORS[e.kind] || NEUTRAL, p.x, spineY, p.x, p.y - p.h / 2)
+    drawLabel(edgeLabel(e), p.x, (spineY + p.y - p.h / 2) / 2)
   }
 
   for (const n of msgNodes) {

@@ -22,11 +22,17 @@ The plugin is deliberately split to isolate responsibilities:
   truncation). Every node draws its type as a top header in the node's kind color
   (so the color coding is self-explanatory). All nodes are rounded rectangles:
   message nodes show header, content, then muted metadata; attached nodes
-  (tool/file/subtask) show header + content, wrapping their text at the full
-  message width so commands/paths fit on one line. `follows` edges are labeled
-  with the time in black text (colors are for nodes, not label text). Error nodes
-  render red. Attached nodes are packed into wrapping rows below the parent
-  message.
+  (tool/file/subtask) show header + content, sized against a per-group width
+  budget so all siblings of a parent share one row. Every attachment group is
+  hung from its parent with an orthogonal tree connector (neutral trunk + row
+  spine + colored stubs into each child); `follows` edges ride a lane in the
+  left margin so they never run along the connector axis. `follows` edges are
+  labeled with the time in black text (colors are for nodes, not label text);
+  the left margin widens to fit the `follows HH:MM` label (the right margin
+  shrinks to compensate, keeping the total canvas width ≤ 642);
+  `causes`/`references` labels sit at their stub midpoints. Error nodes
+  render red. Row wrapping only kicks in as a safety net for groups too wide
+  even at the minimum node width.
 - `src/graph-plugin.ts` — thin entry: `server()` registers the `session_graph_png` tool,
   wiring `buildGraph` → `renderToPng`.
 

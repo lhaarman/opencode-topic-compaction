@@ -22,26 +22,34 @@ export type GraphEdge = { source: string; target: string; kind: EdgeKind; timeCr
 
 type SessionEntry = { info?: Message; parts?: Part[] }
 
+
+// Map NodeKind to labels
 const KIND_LABELS: Record<NodeKind, string> = {
   "user-message": "user message",
   "assistant-response": "assistant response",
-  reasoning: "reasoning",
-  tool_call: "tool call",
-  file: "file",
-  subtask: "subtask",
-  compaction: "compaction",
+  "reasoning": "reasoning",
+  "tool_call": "tool call",
+  "file": "file",
+  "subtask": "subtask",
+  "compaction": "compaction",
 }
 
+// True for kinds that represent a whole message (rather than a thing attached
+// to one); used by the renderer to decide which nodes get the full message box.
 export function isMessageKind(kind: NodeKind): boolean {
   return kind === "user-message" || kind === "assistant-response" || kind === "reasoning" || kind === "compaction"
 }
 
+// Resolve the best filesystem path for a file part: the source path when the
+// SDK gives one, a file:// URL when it only links to one, otherwise the bare
+// filename as a last resort.
 function filePathFromPart(p: Part & { type: "file" }): string {
   if (typeof p.source?.path === "string") return p.source.path
   if (typeof p.url === "string" && p.url.startsWith("file://")) return p.url.slice(7)
   return p.filename ?? ""
 }
 
+// Whether a message is the compaction marker holding the summarized history.
 function itemCompaction(info: Message | undefined, parts: Part[]): boolean {
   // The reliable marker is a `compaction` part; opencode also marks the
   // synthetic summary messages (`summary: true` on assistants, a real
@@ -57,6 +65,10 @@ function itemCompaction(info: Message | undefined, parts: Part[]): boolean {
   return false
 }
 
+// Fetch the session, reduce it to the active context, and turn every message
+// into a node plus edges. Tool calls and subtasks get attached "causes" nodes,
+// files get shared "references" nodes, consecutive messages are chained with
+// "follows" edges.
 export async function buildGraph(client: PluginInput["client"], sessionID: string): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
   // Each session message has a role (user/assistant) and a list of parts
   // (text, reasoning, tool calls, files, subtasks, ...). We turn every message
@@ -136,6 +148,9 @@ export async function buildGraph(client: PluginInput["client"], sessionID: strin
   return { nodes, edges }
 }
 
+// Map a message's role and parts to a node kind: user messages are
+// user-message, assistants with only reasoning become reasoning nodes, and
+// everything else falls back to assistant-response.
 function classifyMessageKind(role: string, parts: Part[]): NodeKind {
   if (role === "user") return "user-message"
   const hasText = parts.some((p) => p.type === "text")
@@ -143,6 +158,8 @@ function classifyMessageKind(role: string, parts: Part[]): NodeKind {
   return "assistant-response"
 }
 
+// Build the display text for a compaction node: the user's title/body summary,
+// or for `summary: true` assistants the text parts that hold the summary.
 function compactionContent(info: Message | undefined, parts: Part[]): string {
   if (!info) return "(compaction)"
   const summary = info.summary
@@ -162,10 +179,11 @@ function compactionContent(info: Message | undefined, parts: Part[]): string {
   return "(compaction)"
 }
 
-// A bare tool name ("bash") is ambiguous, so annotate with the command that was
-// run. File tools get the file they touched, grep gets the pattern plus the
-// plain words it searches for (regex is opaque to non-experts). The tool name
-// is kept on its own line; the context goes on the next.
+// Label for a tool-call node. The bare tool name ("bash") is ambiguous, so
+// annotate it with what the tool actually did: the command that was run, the
+// file it touched, or for grep the pattern plus the plain words it searches
+// for (regex is opaque to non-experts). The tool name is kept on its own line;
+// the context goes on the next.
 function toolContent(p: Extract<Part, { type: "tool" }>): string {
   const input = p.state.input ?? {}
   const name = p.tool
@@ -199,6 +217,8 @@ function toolContent(p: Extract<Part, { type: "tool" }>): string {
   return name
 }
 
+// Turn a regex grep pattern into a short human-readable list of the literal
+// words it targets (used by toolContent for the node label).
 function grepDescription(pattern: string): string {
   // Strip regex syntax and list the literal words it targets:
   // "metadata|nodes|edges" -> "metadata, nodes, edges".
@@ -211,6 +231,8 @@ function grepDescription(pattern: string): string {
   return desc && desc !== pattern.trim() ? desc : ""
 }
 
+// Build the text shown inside a message node: joined text parts, the reasoning
+// for reasoning-only messages, or a fallback listing the tools/files it used.
 function messageContent(kind: NodeKind, parts: Part[]): string {
   const text = parts
     .filter((p): p is Extract<Part, { type: "text" }> => p.type === "text")
@@ -240,6 +262,7 @@ function messageContent(kind: NodeKind, parts: Part[]): string {
   return extra.length > 0 ? extra.join("\n") : `(${KIND_LABELS[kind]})`
 }
 
+// The "provider/model" label shown in a message node's metadata.
 function modelLabel(info: Message | undefined): string | undefined {
   if (!info) return undefined
   if (info.role === "assistant") {
@@ -252,6 +275,8 @@ function modelLabel(info: Message | undefined): string | undefined {
   return undefined
 }
 
+// Total token count (input + output + reasoning) for an assistant message,
+// used as node metadata. Undefined when there's nothing to report.
 function tokenTotal(info: Message | undefined): number | undefined {
   if (!info || info.role !== "assistant") return undefined
   const { input = 0, output = 0, reasoning = 0 } = info.tokens
