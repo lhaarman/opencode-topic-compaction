@@ -14,11 +14,11 @@ async function server(input: PluginInput): Promise<Hooks> {
   return {
     tool: {
       session_graph_png: tool({
-        description: "Build a graph of the current session (messages as nodes with their content, plus tool calls and files) and render it as a PNG image.",
+        description: "Build a graph of the current session (messages as nodes with their content, plus tool calls and files), render it to a PNG saved in graph-poc/, and report the graph summary (node/edge/community counts).",
         args: {},
         execute: async (_args, ctx) => {
           const sessionID = ctx.sessionID
-          const { nodes, edges } = await buildGraph(client, sessionID)
+          const { nodes, edges, communities } = await buildGraph(client, sessionID, directory)
           const png = await renderToPng(nodes, edges)
 
           const outDir = path.join(directory, "graph-poc")
@@ -26,11 +26,10 @@ async function server(input: PluginInput): Promise<Hooks> {
           const outPath = path.join(outDir, `${sessionID}.png`)
           await writeFile(outPath, png)
 
-          const b64 = png.toString("base64")
           return {
             title: "Session Graph",
-            output: `![Session graph ${sessionID}](data:image/png;base64,${b64})\n\nPNG saved to \`${outPath}\``,
-            metadata: { nodes: nodes.length, edges: edges.length },
+            output: `Session graph: ${nodes.length} nodes, ${edges.length} edges, ${communities} communities. PNG saved to \`${outPath}\``,
+            metadata: { nodes: nodes.length, edges: edges.length, communities: communities},
           } as const
         },
       }),

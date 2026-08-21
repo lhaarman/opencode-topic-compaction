@@ -31,6 +31,18 @@ export const EDGE_COLORS: Record<EdgeKind, string> = {
 export const ERROR_FILL = "#fee2e2"
 export const ERROR_BORDER = "#dc2626"
 
+// Community containers: a distinct border color per community (cycled), no
+// fill — grey borders blend into the white background. Interior stays white.
+export const CLUSTER_BORDER_COLORS: string[] = [
+  "#2563eb",
+  "#db2777",
+  "#059669",
+  "#9333ea",
+  "#ea580c",
+  "#0891b2",
+  "#ca8a04",
+]
+
 export const TEXT_COLOR = "#1e293b"
 export const META_COLOR = "#64748b"
 export const FONT_NAME = "Roboto"

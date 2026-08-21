@@ -11,6 +11,7 @@ import {
   EDGE_COLORS,
   ERROR_FILL,
   ERROR_BORDER,
+  CLUSTER_BORDER_COLORS,
   TEXT_COLOR,
   META_COLOR,
   FONT_NAME,
@@ -76,6 +77,12 @@ const ATTACH_PAD_X = 10 * SCALE
 const MIN_ATTACH_INNER = 40 * SCALE
 // Height of the vertical stub between the row spine and each attached node.
 const STUB_GAP = 12 * SCALE
+// Community containers: a colored border per group of message rows with a small
+// header gap above the first row of each group. No fill — the interior is the
+// white canvas.
+const CLUSTER_PAD = 8 * SCALE
+const CLUSTER_HEADER_GAP = 18 * SCALE
+const CLUSTER_BORDER_W = 2 * SCALE
 
 // pureimage needs a registered font to measure and draw text. The .ttf must
 // live next to the deployed plugin file.
@@ -339,14 +346,36 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
 
   const gap = 36
   let cursorY = MARGIN
+  type Cluster = { top: number; bottom: number; label: string; group: number }
+  const clusters: Cluster[] = []
+  let cluster: Cluster | null = null
+  let prevGroup: number | undefined
+  let prevBottomY = MARGIN
   for (let i = 0; i < msgNodes.length; i++) {
     const n = msgNodes[i]
     if (!n) continue
     const s = sizes[i]!
     const h = s.h
+    // Each community starts a new container: reserve a header band above its
+    // first message (the container itself is drawn behind everything later).
+    if (n.group !== prevGroup) {
+      if (cluster) {
+        cluster.bottom = prevBottomY + CLUSTER_PAD
+        clusters.push(cluster)
+      }
+      cursorY += CLUSTER_HEADER_GAP
+      cluster = { top: cursorY - CLUSTER_HEADER_GAP - CLUSTER_PAD, bottom: 0, label: n.groupLabel ?? "work", group: n.group ?? 0 }
+      prevGroup = n.group
+    }
     pos.set(n.id, { x: leftMargin + availW / 2, y: cursorY + h / 2, w: s.w, h })
     // Reserve the full height of any attached group below this row.
-    cursorY += h + (attachedBottom.get(n.id) ?? 0) + gap
+    const bottomY = cursorY + h + (attachedBottom.get(n.id) ?? 0)
+    prevBottomY = bottomY
+    cursorY = bottomY + gap
+  }
+  if (cluster) {
+    cluster.bottom = prevBottomY + CLUSTER_PAD
+    clusters.push(cluster)
   }
 
   for (const [parentId, rows] of attachLayout) {
@@ -400,6 +429,30 @@ export async function renderToPng(nodes: GraphNode[], edges: GraphEdge[]): Promi
 
   ctx.fillStyle = "#ffffff"
   ctx.fillRect(0, 0, width, height)
+
+  // Community containers: a colored border per group of message rows, each
+  // labeled with its task name. Drawn first so edges and nodes sit on top.
+  // The border is a fill sandwich (border color full, then white inset) since
+  // pureimage's roundRect+stroke is flaky.
+  const clusterX0 = leftMargin - 6 * SCALE
+  const clusterW = width - leftMargin - rightMargin + 12 * SCALE
+  ctx.textAlign = "left"
+  ctx.font = `${META_PX}px ${FONT_NAME}`
+  clusters.forEach((c) => {
+    const color = CLUSTER_BORDER_COLORS[c.group % CLUSTER_BORDER_COLORS.length]!
+    const label = fitLine(ctx, c.label, clusterW - 16 * SCALE)
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.roundRect(clusterX0, c.top, clusterW, c.bottom - c.top, 8 * SCALE)
+    ctx.fill()
+    ctx.fillStyle = "#ffffff"
+    ctx.beginPath()
+    ctx.roundRect(clusterX0 + CLUSTER_BORDER_W, c.top + CLUSTER_BORDER_W, clusterW - 2 * CLUSTER_BORDER_W, c.bottom - c.top - 2 * CLUSTER_BORDER_W, 6 * SCALE)
+    ctx.fill()
+    ctx.fillStyle = color
+    ctx.fillText(label, clusterX0 + 8 * SCALE, c.top + CLUSTER_PAD + META_LH / 2)
+  })
+  ctx.textAlign = "center"
 
   ctx.lineWidth = 1.5 * SCALE
   ctx.font = `${META_PX}px ${FONT_NAME}`

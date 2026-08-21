@@ -1,101 +1,40 @@
 # AGENTS.md
 
-Guidelines for working in this repo. OpenCode should read and follow these.
-
-## Project
-
-A proof-of-concept opencode plugin (`graph-viz` / `session_graph_png`) that builds a
-graph of the current session (messages, tool calls, referenced files) and renders it
-as a PNG with `pureimage`.
-
-## Module layout
-
-The plugin is deliberately split to isolate responsibilities:
-
-- `src/graph-model.ts` — data model + graph building. Types (`GraphNode`, `GraphEdge`,
-  `NodeKind`, `EdgeKind`), `buildGraph()`, `isMessageKind()`. Uses the SDK's `Message`
-  and `Part` types; message nodes carry optional metadata (`timeCreated`, `agent`,
-  `model`, `tokens`, `error`, `compaction`). No rendering deps.
-- `src/graph-theme.ts` — pure visual constants (node/edge colors, font name/size).
-- `src/graph-render.ts` — the view. `renderToPng()`, layout/text helpers, font
-  registration, `truncateContent()` (150-word cap on node text, `...` marks every
-  truncation). Every node draws its type as a top header in the node's kind color
-  (so the color coding is self-explanatory). All nodes are rounded rectangles:
-  message nodes show header, content, then muted metadata; attached nodes
-  (tool/file/subtask) show header + content, sized against a per-group width
-  budget so all siblings of a parent share one row. Every attachment group is
-  hung from its parent with an orthogonal tree connector (neutral trunk + row
-  spine + colored stubs into each child); `follows` edges ride a lane in the
-  left margin so they never run along the connector axis. `follows` edges are
-  labeled with the time in black text (colors are for nodes, not label text);
-  the left margin widens to fit the `follows HH:MM` label (the right margin
-  shrinks to compensate, keeping the total canvas width ≤ 642);
-  `causes`/`references` labels sit at their stub midpoints. Error nodes
-  render red. Row wrapping only kicks in as a safety net for groups too wide
-  even at the minimum node width.
-- `src/graph-plugin.ts` — thin entry: `server()` registers the `session_graph_png` tool,
-  wiring `buildGraph` → `renderToPng`.
+Guidelines for developing this repo: a standalone opencode plugin (`session_graph_png`)
+that graphs a session and renders it to PNG. The plugin is self-contained and
+self-documenting; these notes cover only how to work on the code here.
 
 ## Source of truth & sync
 
-`src/` is the source of truth. The deployed copies that opencode loads live in
+`src/` is the source of truth for git. The copies opencode actually loads live in
 `.opencode/plugins/` and must be kept byte-identical:
 
 ```
 cp src/graph-model.ts src/graph-theme.ts src/graph-render.ts src/graph-plugin.ts .opencode/plugins/
 ```
 
-`Roboto-Regular.ttf` lives only in `.opencode/plugins/` (next to the deployed files);
-`src/` is for git, not execution. Verify sync with:
-`diff -r src .opencode/plugins` (ignore the ttf and test files).
+`Roboto-Regular.ttf` lives only in `.opencode/plugins/`. Verify with
+`diff -r src .opencode/plugins` (ignore the ttf and `test_*` files there).
 
-## Node kinds
+## Module layout
 
-Messages are classified in `buildGraph`:
-- `role === "user"` → `user-message`
-- otherwise, has a `text` part → `assistant-response`
-- otherwise, has only `reasoning` parts → `reasoning`
-- otherwise → `assistant-response` (fallback)
-
-`subtask` parts become their own nodes (content = the subtask `description`), attached
-to the parent message by a `causes` edge — the same edge kind tool calls use.
-
-`buildGraph` always captures the **active context**: the last compacted message (the
-marker holding the summarized history) and everything after it; if the session has not
-been compacted yet, the whole conversation. The marker becomes a `compaction` node;
-its content is the summary (`summary.body`/title, or for `summary: true` assistants
-the text parts holding the summary).
-
-Colors are kind-based, one distinct color per kind (user=blue, assistant=orange,
-reasoning=yellow, tool=cyan, file=purple, subtask=teal, compaction=slate). Any node with
-an `error` overrides to red. There is intentionally no `role` field on `GraphNode` — the
-kind encodes it.
-
-Metadata on `GraphNode` (message nodes only): `timeCreated` (ms), `agent` (user
-messages), `model` (`provider/model` label), `tokens` (input+output+reasoning total),
-`error` (error name), `compaction` (a `compaction` part or a `summary` field). There is
-no dollar cost — token counts only.
-
-`GraphEdge` carries `timeCreated` (target message time); the renderer appends it to the
-`follows` label only.
+- `src/graph-model.ts` — graph building; no rendering deps.
+- `src/graph-theme.ts` — pure visual constants.
+- `src/graph-render.ts` — layout + PNG rendering.
+- `src/graph-plugin.ts` — thin entry: registers the tool, wires model → render.
 
 ## Verification
 
 1. Typecheck (from `.opencode/`):
    `bunx tsc --ignoreConfig --noEmit --strict --noUncheckedIndexedAccess --noImplicitOverride --allowImportingTsExtensions --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --skipLibCheck --types node plugins/graph-model.ts plugins/graph-theme.ts plugins/graph-render.ts plugins/graph-plugin.ts`
    (The `import.meta.dir` error in `graph-render.ts` is expected — bun-only, fine at runtime.)
-2. Render check: a synthetic `renderToPng` run must yield a valid PNG, width ≤ 321
-   (no clipping; the whole canvas is rendered at `SCALE = 2`, so ≤ 642 in pixels),
-   taller than wide (one node per row), and one distinct color per kind (user blue,
-   assistant orange, compaction slate, error red).
-3. Live: invoke the `session_graph_png` tool once.
+2. Unit tests: `bun plugins/test_cluster.ts`.
+3. Live E2E (needs an `opencode serve` on port 4399): `bun plugins/test_graph-plugin.ts`.
 4. `diff -r` src vs `.opencode/plugins` to confirm sync.
 
-## Code style / review checklist
+## Code style
 
-- 2-space indentation, no semicolons, single quotes for strings... (repo uses double quotes).
+- 2-space indentation, no semicolons, double-quoted strings.
 - Comments explain the "why", not the "what" — keep them sparse.
-- No dead code, no duplicated logic, minimal `any`. Prefer small typed unions over casts.
+- No dead code, no duplicated logic, minimal `any`; prefer small typed unions over casts.
 - Pure functions over side effects; keep the model free of rendering concerns.
-- Review passes should run the verification list above and flag only substantive issues;
-  style suggestions are advisory, not blockers.

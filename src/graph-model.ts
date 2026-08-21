@@ -1,8 +1,8 @@
-// Data model for the session graph: turns opencode session messages into
-// graph nodes and edges. No rendering logic lives here.
+// Data model for the session graph: turns opencode session messages into nodes and edges
 import path from "node:path"
 import type { Message, Part } from "@opencode-ai/sdk"
 import type { PluginInput } from "@opencode-ai/plugin"
+import { assignCommunities } from "./graph-cluster.ts"
 
 export type NodeKind = "user-message" | "assistant-response" | "reasoning" | "tool_call" | "file" | "subtask" | "compaction"
 export type EdgeKind = "follows" | "causes" | "references"
@@ -17,11 +17,14 @@ export type GraphNode = {
   tokens?: number
   error?: string
   compaction?: boolean
+  // Message nodes are also assigned groups for clustering
+  group?: number
+  groupLabel?: string
 }
+
 export type GraphEdge = { source: string; target: string; kind: EdgeKind; timeCreated?: number }
 
-type SessionEntry = { info?: Message; parts?: Part[] }
-
+export type SessionEntry = { info?: Message; parts?: Part[] }
 
 // Map NodeKind to labels
 const KIND_LABELS: Record<NodeKind, string> = {
@@ -34,74 +37,75 @@ const KIND_LABELS: Record<NodeKind, string> = {
   "compaction": "compaction",
 }
 
-// True for kinds that represent a whole message (rather than a thing attached
-// to one); used by the renderer to decide which nodes get the full message box.
+// Multiple node kinds can depict a message
+const MESSAGE_KINDS: readonly NodeKind[] = ["user-message", "assistant-response", "reasoning", "compaction"]
+
+// Determine whether node depicts a message
 export function isMessageKind(kind: NodeKind): boolean {
-  return kind === "user-message" || kind === "assistant-response" || kind === "reasoning" || kind === "compaction"
+  return MESSAGE_KINDS.includes(kind)
 }
 
-// Resolve the best filesystem path for a file part: the source path when the
-// SDK gives one, a file:// URL when it only links to one, otherwise the bare
-// filename as a last resort.
-function filePathFromPart(p: Part & { type: "file" }): string {
-  if (typeof p.source?.path === "string") return p.source.path
-  if (typeof p.url === "string" && p.url.startsWith("file://")) return p.url.slice(7)
-  return p.filename ?? ""
+// Resolve the best filesystem path for a file part
+function filePathFromPart(part: Part & { type: "file" }): string {
+  // If file has source path, return
+  if (typeof part.source?.path === "string") return part.source.path
+  // If file has url, slice url before return
+  if (typeof part.url === "string" && part.url.startsWith("file://")) return part.url.slice(7)
+  // Else return filename if exists
+  return part.filename ?? ""
 }
 
-// Whether a message is the compaction marker holding the summarized history.
-function itemCompaction(info: Message | undefined, parts: Part[]): boolean {
-  // The reliable marker is a `compaction` part; opencode also marks the
-  // synthetic summary messages (`summary: true` on assistants, a real
-  // title/body on users). A bare `summary: { diffs: [] }` appears on every
-  // user message and is NOT a compaction marker.
-  if (parts.some((p) => p.type === "compaction")) return true
-  const s = info?.summary
-  if (s === true) return true
-  if (s && typeof s === "object") {
-    if (typeof s.title === "string" && s.title.length > 0) return true
-    if (typeof s.body === "string" && s.body.length > 0) return true
+// Whether a message is the compaction marker holding the summarized history
+function isCompaction(info: Message | undefined, parts: Part[]): boolean {
+  // The reliable marker is a `compaction` part
+  if (parts.some((part) => part.type === "compaction")) return true
+  const summary = info?.summary
+  // If info marked as summary also return true
+  if (summary === true) return true
+  // If summary is of type object and title or body is non-empty string also return true
+  if (summary && typeof summary === "object") {
+    // Summary can also contain key 'diffs' we do not mark those as compaction and can be found in every message
+    if (typeof summary.title === "string" && summary.title.length > 0) return true
+    if (typeof summary.body === "string" && summary.body.length > 0) return true
   }
   return false
 }
 
-// Fetch the session, reduce it to the active context, and turn every message
-// into a node plus edges. Tool calls and subtasks get attached "causes" nodes,
-// files get shared "references" nodes, consecutive messages are chained with
-// "follows" edges.
-export async function buildGraph(client: PluginInput["client"], sessionID: string): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
-  // Each session message has a role (user/assistant) and a list of parts
-  // (text, reasoning, tool calls, files, subtasks, ...). We turn every message
-  // into a node and attach tool/file/subtask nodes to it, linking consecutive
-  // messages with "follows" edges.
+// Fetch the session, reduce it to the active context, and build graph.
+export async function buildGraph(client: PluginInput["client"], sessionID: string, workspace?: string): Promise<{ nodes: GraphNode[]; edges: GraphEdge[]; communities: number }> {
+  // Retrieve messages from client session by ID
   const res = await client.session.messages({ path: { id: sessionID } })
+  // cast to SessionEntry to ease manipulation
   const items = (res?.data ?? []) as SessionEntry[]
 
-  // Capture only the active context: the last compacted message (the marker
-  // holding the summarized history) and everything after it. No compaction in
-  // the session yet means the whole conversation is active.
+  // Capture only the active context: the last compacted message (if exists) and everything after it
   let lastCompaction = -1
   for (let i = 0; i < items.length; i++) {
-    if (itemCompaction(items[i]?.info, items[i]?.parts ?? [])) lastCompaction = i
+    if (isCompaction(items[i]?.info, items[i]?.parts ?? [])) lastCompaction = i
   }
-  const active = lastCompaction >= 0 ? items.slice(lastCompaction) : items
+  // grab active context
+  const activeContext = lastCompaction >= 0 ? items.slice(lastCompaction) : items
 
   const nodes: GraphNode[] = []
   const edges: GraphEdge[] = []
   const files = new Map<string, string>()
   let prevMsgId: string | undefined
+  const partsByNode = new Map<string, Part[]>()
 
-  for (let i = 0; i < active.length; i++) {
-    const entry = active[i]
+  for (let i = 0; i < activeContext.length; i++) {
+    const entry = activeContext[i]
     if (!entry) continue
     const info = entry.info
     const role = info?.role ?? "unknown"
     const msgID = String(info?.id ?? `msg-${i}`)
+
+    // CONSTRUCT NODE
     // Append the index so ids stay unique even if message ids repeat.
     const nodeId = `${msgID}-${i}`
 
     const parts = entry.parts ?? []
-    const compaction = itemCompaction(info, parts)
+    partsByNode.set(nodeId, parts)
+    const compaction = isCompaction(info, parts)
     const kind = compaction ? "compaction" : classifyMessageKind(role, parts)
     const node: GraphNode = {
       id: nodeId,
@@ -115,37 +119,42 @@ export async function buildGraph(client: PluginInput["client"], sessionID: strin
       compaction,
     }
     nodes.push(node)
+
+    // Add edge from previous message to current
     if (prevMsgId) edges.push({ source: prevMsgId, target: nodeId, kind: "follows", timeCreated: node.timeCreated })
+    // Update previous message
     prevMsgId = nodeId
 
-    for (const p of parts) {
-      if (p.type === "tool") {
-        const toolNodeId = `tool-${p.callID ?? p.tool}-${i}`
+    for (const part of parts) {
+      if (part.type === "tool") {
+        const toolNodeId = `tool-${part.callID ?? part.tool}-${i}`
         nodes.push({
           id: toolNodeId,
           kind: "tool_call",
-          content: toolContent(p),
-          error: p.state.status === "error" ? p.state.error : undefined,
+          content: toolContent(part),
+          error: part.state.status === "error" ? part.state.error : undefined,
         })
         edges.push({ source: nodeId, target: toolNodeId, kind: "causes", timeCreated: node.timeCreated })
-      } else if (p.type === "file") {
-        const fp = filePathFromPart(p)
-        if (!fp) continue
-        if (!files.has(fp)) {
-          const fileNodeId = `file-${fp}`
-          files.set(fp, fileNodeId)
-          nodes.push({ id: fileNodeId, kind: "file", content: path.basename(fp) })
+      } else if (part.type === "file") {
+        const filePath = filePathFromPart(part)
+        if (!filePath) continue
+        if (!files.has(filePath)) {
+          const fileNodeId = `file-${filePath}`
+          files.set(filePath, fileNodeId)
+          nodes.push({ id: fileNodeId, kind: "file", content: path.basename(filePath) })
         }
-        edges.push({ source: nodeId, target: files.get(fp)!, kind: "references", timeCreated: node.timeCreated })
-      } else if (p.type === "subtask") {
-        const subtaskNodeId = `subtask-${p.id ?? i}-${i}`
-        nodes.push({ id: subtaskNodeId, kind: "subtask", content: p.description })
+        edges.push({ source: nodeId, target: files.get(filePath)!, kind: "references", timeCreated: node.timeCreated })
+      } else if (part.type === "subtask") {
+        const subtaskNodeId = `subtask-${part.id ?? i}-${i}`
+        nodes.push({ id: subtaskNodeId, kind: "subtask", content: part.description })
         edges.push({ source: nodeId, target: subtaskNodeId, kind: "causes", timeCreated: node.timeCreated })
       }
     }
   }
 
-  return { nodes, edges }
+  // Assign communities to graph
+  const communities = assignCommunities(nodes, partsByNode, items, workspace)
+  return { nodes, edges, communities }
 }
 
 // Map a message's role and parts to a node kind: user messages are
@@ -153,8 +162,8 @@ export async function buildGraph(client: PluginInput["client"], sessionID: strin
 // everything else falls back to assistant-response.
 function classifyMessageKind(role: string, parts: Part[]): NodeKind {
   if (role === "user") return "user-message"
-  const hasText = parts.some((p) => p.type === "text")
-  if (!hasText && parts.some((p) => p.type === "reasoning")) return "reasoning"
+  const hasText = parts.some((part) => part.type === "text")
+  if (!hasText && parts.some((part) => part.type === "reasoning")) return "reasoning"
   return "assistant-response"
 }
 
@@ -170,8 +179,8 @@ function compactionContent(info: Message | undefined, parts: Part[]): string {
   // message's text parts, not on the info.summary field.
   if (summary === true) {
     const text = parts
-      .filter((p): p is Extract<Part, { type: "text" }> => p.type === "text")
-      .map((p) => p.text)
+      .filter((part): part is Extract<Part, { type: "text" }> => part.type === "text")
+      .map((part) => part.text)
       .join("\n")
       .trim()
     if (text) return text
@@ -184,9 +193,9 @@ function compactionContent(info: Message | undefined, parts: Part[]): string {
 // file it touched, or for grep the pattern plus the plain words it searches
 // for (regex is opaque to non-experts). The tool name is kept on its own line;
 // the context goes on the next.
-function toolContent(p: Extract<Part, { type: "tool" }>): string {
-  const input = p.state.input ?? {}
-  const name = p.tool
+function toolContent(part: Extract<Part, { type: "tool" }>): string {
+  const input = part.state.input ?? {}
+  const name = part.tool
   switch (name) {
     case "bash": {
       const cmd = input.command
@@ -196,8 +205,8 @@ function toolContent(p: Extract<Part, { type: "tool" }>): string {
     case "edit":
     case "write":
     case "read": {
-      const fp = input.filePath
-      if (typeof fp === "string" && fp) return `${name}\n${fp}`
+      const filePath = input.filePath
+      if (typeof filePath === "string" && filePath) return `${name}\n${filePath}`
       break
     }
     case "grep": {
@@ -209,8 +218,8 @@ function toolContent(p: Extract<Part, { type: "tool" }>): string {
       break
     }
     case "question": {
-      const q = input.question
-      if (typeof q === "string" && q.trim()) return `question\n${q}`
+      const question = input.question
+      if (typeof question === "string" && question.trim()) return `question\n${question}`
       break
     }
   }
@@ -224,8 +233,8 @@ function grepDescription(pattern: string): string {
   // "metadata|nodes|edges" -> "metadata, nodes, edges".
   const tokens = pattern
     .split(/[|()[\]{}^$*+?.\\/="<>:;,-\s]+/)
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 2 && /^[\w]+$/.test(t))
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && /^[\w]+$/.test(token))
   const uniq = [...new Set(tokens)]
   const desc = uniq.slice(0, 4).join(", ")
   return desc && desc !== pattern.trim() ? desc : ""
@@ -235,28 +244,28 @@ function grepDescription(pattern: string): string {
 // for reasoning-only messages, or a fallback listing the tools/files it used.
 function messageContent(kind: NodeKind, parts: Part[]): string {
   const text = parts
-    .filter((p): p is Extract<Part, { type: "text" }> => p.type === "text")
-    .map((p) => p.text)
+    .filter((part): part is Extract<Part, { type: "text" }> => part.type === "text")
+    .map((part) => part.text)
     .join("\n")
     .trim()
   if (text) return text
 
   if (kind === "reasoning") {
     return parts
-      .filter((p): p is Extract<Part, { type: "reasoning" }> => p.type === "reasoning")
-      .map((p) => p.text)
+      .filter((part): part is Extract<Part, { type: "reasoning" }> => part.type === "reasoning")
+      .map((part) => part.text)
       .join("\n")
       .trim()
   }
 
   // Fallback listing tools/files when a message has no text.
   const extra: string[] = []
-  for (const p of parts) {
-    if (p.type === "tool") {
-      extra.push(`tool: ${p.tool}`)
-    } else if (p.type === "file") {
-      const fp = filePathFromPart(p)
-      if (fp) extra.push(`file: ${fp}`)
+  for (const part of parts) {
+    if (part.type === "tool") {
+      extra.push(`tool: ${part.tool}`)
+    } else if (part.type === "file") {
+      const filePath = filePathFromPart(part)
+      if (filePath) extra.push(`file: ${filePath}`)
     }
   }
   return extra.length > 0 ? extra.join("\n") : `(${KIND_LABELS[kind]})`
