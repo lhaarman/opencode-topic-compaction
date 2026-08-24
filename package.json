@@ -1,5 +1,31 @@
 {
   "name": "opencode-topic-compaction",
+  "version": "0.1.0",
+  "author": "lhaarman",
+  "description": "Topic-structured compaction for opencode: per-topic session summaries with mandatory blocker status and guaranteed blocker carry-forward",
+  "type": "module",
+  "main": "./src/topics-plugin.ts",
+  "exports": {
+    ".": "./src/topics-plugin.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "compaction",
+    "topics",
+    "session-summary",
+    "llm-agents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lhaarman/opencode-topic-compaction.git"
+  },
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",

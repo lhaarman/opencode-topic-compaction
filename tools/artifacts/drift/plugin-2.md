@@ -1,7 +1,7 @@
 ## Summary
 
 ### Project Overview
-Building and iteratively refining a **community-aware compaction plugin** for opencode (`/workspaces/opencode-graph-plugin`) that produces topic-structured summaries (`# TOPIC n: <label>` + `# STATE`) instead of opencode's native linear format (`## Objective / ## Important Details / ## Work State / ## Next Move`). The goal is to surpass native compaction on segmentation, rare-file preservation, decision provenance, causal traceability, and small-window survival — while never making things worse.
+Building and iteratively refining a **community-aware compaction plugin** for opencode (`/workspaces/opencode-topic-compaction`) that produces topic-structured summaries (`# TOPIC n: <label>` + `# STATE`) instead of opencode's native linear format (`## Objective / ## Important Details / ## Work State / ## Next Move`). The goal is to surpass native compaction on segmentation, rare-file preservation, decision provenance, causal traceability, and small-window survival — while never making things worse.
 
 ### Architecture (current lean rev)
 

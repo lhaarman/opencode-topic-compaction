@@ -48,12 +48,12 @@
 3. Live render `ses_feb0ee2a6ffeEJRykJ0iLjPmm7` (serve on 4399), regenerate `graph-poc/*.png`, confirm `diff -r src .opencode/plugins` (only ttf + test differ), update AGENTS.md (attached nodes now rounded rects sized to message width; tool annotations; SCALE; time policy), kill serve + temp files, report — user will restart opencode and re-render via tool.
 
 ## Relevant Files
-- `/workspaces/opencode-graph-plugin/src/graph-render.ts` — all-rect redesign just applied (unverified, unsynced); contains `Pos`, `sizeAttachNode`, `drawNodeRect`, layout/draw rewrite.
-- `/workspaces/opencode-graph-plugin/src/graph-model.ts` — active-context `buildGraph`, compaction kind + summary-content fix, `toolContent`/`grepDescription` annotations (synced to plugins).
-- `/workspaces/opencode-graph-plugin/src/graph-theme.ts` — per-kind colors, error red, `META_COLOR`, `FONT_SIZE`/`META_FONT_SIZE` (synced).
-- `/workspaces/opencode-graph-plugin/src/graph-plugin.ts` — thin entry; id `"graph-plugin"`, tool `session_graph_png`, saves to `graph-poc/` (synced).
-- `/workspaces/opencode-graph-plugin/.opencode/plugins/` — deployed copies; `graph-render.ts` here is one revision behind (pre-redesign circles version).
-- `/workspaces/opencode-graph-plugin/.opencode/package.json` — deps: `@opencode-ai/plugin` 1.18.18, `@opencode-ai/sdk` 1.18.18, `pureimage`.
-- `/workspaces/opencode-graph-plugin/AGENTS.md` — workflow/sync/verify docs; needs updating for rect redesign + tool annotations + SCALE + time policy.
-- `/workspaces/opencode-graph-plugin/.opencode/node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts` — SDK type source of truth (ToolPart/state/input shapes).
-- `/workspaces/opencode-graph-plugin/graph-poc/ses_feb0ee2a6ffeEJRykJ0iLjPmm7.png` — last saved render (634×58023, pre-redesign).
+- `/workspaces/opencode-topic-compaction/src/graph-render.ts` — all-rect redesign just applied (unverified, unsynced); contains `Pos`, `sizeAttachNode`, `drawNodeRect`, layout/draw rewrite.
+- `/workspaces/opencode-topic-compaction/src/graph-model.ts` — active-context `buildGraph`, compaction kind + summary-content fix, `toolContent`/`grepDescription` annotations (synced to plugins).
+- `/workspaces/opencode-topic-compaction/src/graph-theme.ts` — per-kind colors, error red, `META_COLOR`, `FONT_SIZE`/`META_FONT_SIZE` (synced).
+- `/workspaces/opencode-topic-compaction/src/graph-plugin.ts` — thin entry; id `"graph-plugin"`, tool `session_graph_png`, saves to `graph-poc/` (synced).
+- `/workspaces/opencode-topic-compaction/.opencode/plugins/` — deployed copies; `graph-render.ts` here is one revision behind (pre-redesign circles version).
+- `/workspaces/opencode-topic-compaction/.opencode/package.json` — deps: `@opencode-ai/plugin` 1.18.18, `@opencode-ai/sdk` 1.18.18, `pureimage`.
+- `/workspaces/opencode-topic-compaction/AGENTS.md` — workflow/sync/verify docs; needs updating for rect redesign + tool annotations + SCALE + time policy.
+- `/workspaces/opencode-topic-compaction/.opencode/node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts` — SDK type source of truth (ToolPart/state/input shapes).
+- `/workspaces/opencode-topic-compaction/graph-poc/ses_feb0ee2a6ffeEJRykJ0iLjPmm7.png` — last saved render (634×58023, pre-redesign).

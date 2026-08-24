@@ -26,23 +26,23 @@
 - Full sync `cp src/*.ts .opencode/plugins/` + `diff -r` clean (only `Roboto-Regular.ttf`, `test_cluster.ts`, `test_graph-plugin.ts` extra) + typecheck clean (only `import.meta.dir`) + all tests pass.
 
 ### Active
-- Final regression verification incomplete: latest run (`bun .opencode/render_live.ts`) returned `nodes=52 edges=51 communities=2` and wrote `/workspaces/opencode-graph-plugin/graph-poc/regression.png` — node count dropped vs. the earlier 87-node/4-community render (likely another re-compaction shrank the active window); per-group breakdown dump failed because `bun -e` cannot resolve `@opencode-ai/sdk` (needs a script file under `.opencode/`).
+- Final regression verification incomplete: latest run (`bun .opencode/render_live.ts`) returned `nodes=52 edges=51 communities=2` and wrote `/workspaces/opencode-topic-compaction/graph-poc/regression.png` — node count dropped vs. the earlier 87-node/4-community render (likely another re-compaction shrank the active window); per-group breakdown dump failed because `bun -e` cannot resolve `@opencode-ai/sdk` (needs a script file under `.opencode/`).
 - Throwaway `.opencode/render_live.ts` still exists (delete after final verification).
 - Code review report not yet delivered to the user.
 
 ### Blocked
-- Port 17431 no longer running; only 4399 serves the session (use `createOpencodeClient({ baseUrl: "http://127.0.0.1:4399", directory: "/workspaces/opencode-graph-plugin" })`).
+- Port 17431 no longer running; only 4399 serves the session (use `createOpencodeClient({ baseUrl: "http://127.0.0.1:4399", directory: "/workspaces/opencode-topic-compaction" })`).
 
 ## Next Move
-1. Write a temporary script under `.opencode/` (not `bun -e`) that calls `buildGraph(client, "ses_fe6efc2aaffeNlzZ4NiASIU5jY", "/workspaces/opencode-graph-plugin")` and dumps per-group label/count/run breakdown to confirm the 52-node/2-community window groups sensibly; then delete both throwaway scripts (`.opencode/render_live.ts` and the temp dumper).
+1. Write a temporary script under `.opencode/` (not `bun -e`) that calls `buildGraph(client, "ses_fe6efc2aaffeNlzZ4NiASIU5jY", "/workspaces/opencode-topic-compaction")` and dumps per-group label/count/run breakdown to confirm the 52-node/2-community window groups sensibly; then delete both throwaway scripts (`.opencode/render_live.ts` and the temp dumper).
 2. Deliver the full code review report to the user: summarize findings and fixes (weak-vote zero-overlap deferral, `buildGraph` workspace param + plugin passing `input.directory`, tokenizer hardening, depth-premium tuning to 1.5), note remaining known limitations (mega-community when work genuinely interleaves across files; palette cycling above 7 communities), and remind that `session_graph_png` requires an opencode restart to load the new plugin.
 
 ## Relevant Files
-- `/workspaces/opencode-graph-plugin/src/graph-model.ts`: generic detection — `ScentSignal`, `scentOf`, `pathTokens` (exported), `toolSignals`, `workspaceOf`, `normPath`, `overlap`, exported `clusterMessages`/`ClusterResult`, wrapper `assignCommunities`; constants EDIT/READ/MENTION/STRONG weights, DEPTH_POWER, BASE_SCENT, JOIN_THRESHOLD, MAX_COMMUNITIES; `buildGraph(client, sessionID, workspace?)`.
-- `/workspaces/opencode-graph-plugin/src/graph-render.ts`: cluster borders colored by group id, label truncation via `fitLine`; `CLUSTER_PAD`/`CLUSTER_HEADER_GAP`/`CLUSTER_BORDER_W`.
-- `/workspaces/opencode-graph-plugin/src/graph-theme.ts`: `CLUSTER_BORDER_COLORS` (7 colors).
-- `/workspaces/opencode-graph-plugin/src/graph-plugin.ts`: passes `directory` to `buildGraph`; reports `communities` in tool metadata.
-- `/workspaces/opencode-graph-plugin/.opencode/plugins/`: deployed copies (source of truth `src/`); `test_cluster.ts` (17 passing unit tests), `test_graph-plugin.ts` (live E2E, port 4399).
-- `/workspaces/opencode-graph-plugin/AGENTS.md`: updated scent-trails description (strong identity, faint voting, depth premium, thresholds, cap, labels).
-- `/workspaces/opencode-graph-plugin/.opencode/render_live.ts`: throwaway harness (baseUrl 4399, writes `graph-poc/regression.png`) — delete after final verification.
-- `/workspaces/opencode-graph-plugin/graph-poc/regression.png`: latest regression render (52 nodes, 2 communities); `graph-poc/ses_fe6efc2aaffeNlzZ4NiASIU5jY.png`: older render (pre-weak-vote-fix, 641×51449).
+- `/workspaces/opencode-topic-compaction/src/graph-model.ts`: generic detection — `ScentSignal`, `scentOf`, `pathTokens` (exported), `toolSignals`, `workspaceOf`, `normPath`, `overlap`, exported `clusterMessages`/`ClusterResult`, wrapper `assignCommunities`; constants EDIT/READ/MENTION/STRONG weights, DEPTH_POWER, BASE_SCENT, JOIN_THRESHOLD, MAX_COMMUNITIES; `buildGraph(client, sessionID, workspace?)`.
+- `/workspaces/opencode-topic-compaction/src/graph-render.ts`: cluster borders colored by group id, label truncation via `fitLine`; `CLUSTER_PAD`/`CLUSTER_HEADER_GAP`/`CLUSTER_BORDER_W`.
+- `/workspaces/opencode-topic-compaction/src/graph-theme.ts`: `CLUSTER_BORDER_COLORS` (7 colors).
+- `/workspaces/opencode-topic-compaction/src/graph-plugin.ts`: passes `directory` to `buildGraph`; reports `communities` in tool metadata.
+- `/workspaces/opencode-topic-compaction/.opencode/plugins/`: deployed copies (source of truth `src/`); `test_cluster.ts` (17 passing unit tests), `test_graph-plugin.ts` (live E2E, port 4399).
+- `/workspaces/opencode-topic-compaction/AGENTS.md`: updated scent-trails description (strong identity, faint voting, depth premium, thresholds, cap, labels).
+- `/workspaces/opencode-topic-compaction/.opencode/render_live.ts`: throwaway harness (baseUrl 4399, writes `graph-poc/regression.png`) — delete after final verification.
+- `/workspaces/opencode-topic-compaction/graph-poc/regression.png`: latest regression render (52 nodes, 2 communities); `graph-poc/ses_fe6efc2aaffeNlzZ4NiASIU5jY.png`: older render (pre-weak-vote-fix, 641×51449).

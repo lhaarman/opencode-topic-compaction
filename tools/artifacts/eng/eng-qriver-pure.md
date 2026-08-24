@@ -1,5 +1,5 @@
 ## Objective
-- Evolve `/workspaces/opencode-graph-plugin` so community-based compaction yields topic-structured summaries (`# TOPIC n` / `# STATE`) via `experimental.session.compacting`, never worse than native opencode compaction.
+- Evolve `/workspaces/opencode-topic-compaction` so community-based compaction yields topic-structured summaries (`# TOPIC n` / `# STATE`) via `experimental.session.compacting`, never worse than native opencode compaction.
 - Current sub-goal: finish the exhaustive quality assessment — fix the synthetic-session crash (fabricated tool parts missing `state.time`), rebuild pristine test windows, run the full headless plugin-vs-pure sweep, score 1–100, and write the final maintainer-facing markdown report.
 
 ## Important Details
@@ -48,11 +48,11 @@
 5. Report back to user BEFORE any local qwen/LM Studio runs.
 
 ## Relevant Files
-- `/workspaces/opencode-graph-plugin/src/graph-compaction.ts` — override builder (lean caps, blocked key-value, global next, soft bullets)
-- `/workspaces/opencode-graph-plugin/src/graph-model.ts` — buildGraph/fetch/windowing/summaryText
-- `/workspaces/opencode-graph-plugin/src/graph-cluster.ts` — assignCommunities
-- `/workspaces/opencode-graph-plugin/src/graph-plugin.ts` — tool + compacting hook + trace()
-- `/workspaces/opencode-graph-plugin/src/test_cluster.ts` — 30 unit checks
+- `/workspaces/opencode-topic-compaction/src/graph-compaction.ts` — override builder (lean caps, blocked key-value, global next, soft bullets)
+- `/workspaces/opencode-topic-compaction/src/graph-model.ts` — buildGraph/fetch/windowing/summaryText
+- `/workspaces/opencode-topic-compaction/src/graph-cluster.ts` — assignCommunities
+- `/workspaces/opencode-topic-compaction/src/graph-plugin.ts` — tool + compacting hook + trace()
+- `/workspaces/opencode-topic-compaction/src/test_cluster.ts` — 30 unit checks
 - `/tmp/opencode/gen_synthetic_v3.ts` — READY TO RUN synthetic regenerator (fixes state.time crash)
 - `/tmp/opencode/make_clones.ts`, `/tmp/opencode/run_xh.ts`, `/tmp/opencode/run_one.ts` — clone/runner patterns to adapt
 - `/tmp/opencode/hook-trace.log`, `/tmp/opencode/serve.log`, `/tmp/opencode/serve-pure.log` — instrumentation

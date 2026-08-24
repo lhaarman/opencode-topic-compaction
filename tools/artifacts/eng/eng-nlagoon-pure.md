@@ -43,12 +43,12 @@
 3. Per workflow, copy all four modules to `.opencode/plugins/`, live-render `ses_feb0ee2a6ffeEJRykJ0iLjPmm7` via serve script, confirm `diff -r src .opencode/plugins` (only ttf/test differ), kill serve in a standalone command, update AGENTS.md (attached nodes are now rounded rectangles, not `[16,44]` circles), then tell the user to restart opencode and re-run `session_graph_png`.
 
 ## Relevant Files
-- `/workspaces/opencode-graph-plugin/src/graph-render.ts` — active redesign: rect-only `Pos`, `sizeAttachNode`, `drawNodeRect`, row packing; **unverified, unsynced**; contains the `contentLines`/`lines` mismatch bug.
-- `/workspaces/opencode-graph-plugin/src/graph-model.ts` — synced: active-context `buildGraph`, compaction summary fix, `toolContent` newline annotations, `grepDescription`.
-- `/workspaces/opencode-graph-plugin/src/graph-theme.ts` — synced: per-kind fills/borders, `ERROR_FILL/BORDER`, `META_COLOR`, `FONT_SIZE`/`META_FONT_SIZE`.
-- `/workspaces/opencode-graph-plugin/src/graph-plugin.ts` — thin entry, plugin id `"graph-plugin"`, tool `session_graph_png`, writes `graph-poc/<id>.png`.
-- `/workspaces/opencode-graph-plugin/.opencode/plugins/` — deployed copies (+ `Roboto-Regular.ttf`, `test_graph-plugin.ts`); `graph-render.ts` here is stale (pre-rect circles).
-- `/workspaces/opencode-graph-plugin/.opencode/package.json` — deps: `@opencode-ai/plugin` 1.18.18, `@opencode-ai/sdk` 1.18.18, `pureimage`.
-- `/workspaces/opencode-graph-plugin/AGENTS.md` — workflow/sync/verify docs; needs circle→rounded-rect wording update for attached nodes.
-- `/workspaces/opencode-graph-plugin/graph-poc/ses_feb0ee2a6ffeEJRykJ0iLjPmm7.png` — last delivered render (pre-rect redesign).
-- `/workspaces/opencode-graph-plugin/.opencode/node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts` — SDK type source of truth (`ToolPart.state.input`, `summary` shapes, part unions).
+- `/workspaces/opencode-topic-compaction/src/graph-render.ts` — active redesign: rect-only `Pos`, `sizeAttachNode`, `drawNodeRect`, row packing; **unverified, unsynced**; contains the `contentLines`/`lines` mismatch bug.
+- `/workspaces/opencode-topic-compaction/src/graph-model.ts` — synced: active-context `buildGraph`, compaction summary fix, `toolContent` newline annotations, `grepDescription`.
+- `/workspaces/opencode-topic-compaction/src/graph-theme.ts` — synced: per-kind fills/borders, `ERROR_FILL/BORDER`, `META_COLOR`, `FONT_SIZE`/`META_FONT_SIZE`.
+- `/workspaces/opencode-topic-compaction/src/graph-plugin.ts` — thin entry, plugin id `"graph-plugin"`, tool `session_graph_png`, writes `graph-poc/<id>.png`.
+- `/workspaces/opencode-topic-compaction/.opencode/plugins/` — deployed copies (+ `Roboto-Regular.ttf`, `test_graph-plugin.ts`); `graph-render.ts` here is stale (pre-rect circles).
+- `/workspaces/opencode-topic-compaction/.opencode/package.json` — deps: `@opencode-ai/plugin` 1.18.18, `@opencode-ai/sdk` 1.18.18, `pureimage`.
+- `/workspaces/opencode-topic-compaction/AGENTS.md` — workflow/sync/verify docs; needs circle→rounded-rect wording update for attached nodes.
+- `/workspaces/opencode-topic-compaction/graph-poc/ses_feb0ee2a6ffeEJRykJ0iLjPmm7.png` — last delivered render (pre-rect redesign).
+- `/workspaces/opencode-topic-compaction/.opencode/node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts` — SDK type source of truth (`ToolPart.state.input`, `summary` shapes, part unions).

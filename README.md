@@ -49,8 +49,27 @@ session messages ──► topics-model ──► topics-cluster ──► topic
 
 ## Install
 
-Copy the plugin files into your project's `.opencode/plugins/` directory.
-No other setup.
+**From npm (recommended)** — add the package to your `opencode.json`; bun
+installs it automatically at startup:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-topic-compaction"]
+}
+```
+
+- **Project-level**: put the snippet in `<project>/opencode.json` — active in
+  that project only.
+- **Global**: put it in `~/.config/opencode/opencode.json` — active everywhere.
+
+**Manual** — copy the plugin files (`src/topics-*.ts`) into a plugin directory:
+
+- `.opencode/plugins/` — project-level, or
+- `~/.config/opencode/plugins/` — global
+
+No other setup. Manual copies need no `plugin` config entry; files there load
+automatically.
 
 ## Use
 

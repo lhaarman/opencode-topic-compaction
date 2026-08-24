@@ -9,3 +9,10 @@ package-lock.json
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+# Local review notes and feedback drafts
+agent-feedback.txt
+feedback_chatbot.md
+
+# Stale rendering output (feature removed)
+graph-poc/

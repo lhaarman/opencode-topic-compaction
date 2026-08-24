@@ -1,14 +1,11 @@
 // Plugin entry: topic-structured compaction via the compacting hook.
 // Real logic lives in topics-model.ts (model), topics-cluster.ts
 // (communities) and topics-compaction.ts (compaction prompt).
-import type { Hooks, PluginInput } from "@opencode-ai/plugin"
+import type { Plugin } from "@opencode-ai/plugin"
 import { buildGraph } from "./topics-model.ts"
 import { compactionContext } from "./topics-compaction.ts"
 
-async function server(input: PluginInput): Promise<Hooks> {
-  const client = input.client
-  const directory = input.directory
-
+export const TopicCompactionPlugin: Plugin = async ({ client, directory }) => {
   return {
     "experimental.session.compacting": async (input, output) => {
       // Append our topic-structured OVERRIDE as hook context: it lands after
@@ -28,7 +25,4 @@ async function server(input: PluginInput): Promise<Hooks> {
   }
 }
 
-export default {
-  id: "opencode-topic-compaction",
-  server,
-}
+export default TopicCompactionPlugin

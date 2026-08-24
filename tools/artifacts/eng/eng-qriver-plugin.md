@@ -56,7 +56,7 @@
 
 # STATE
 
-- Overall goal: evolve `/workspaces/opencode-graph-plugin` so community-based compaction produces topic-structured summaries via `experimental.session.compacting`, with guaranteed fallback to native compaction — and prove it surpasses native across agentic coding scenarios.
+- Overall goal: evolve `/workspaces/opencode-topic-compaction` so community-based compaction produces topic-structured summaries via `experimental.session.compacting`, with guaranteed fallback to native compaction — and prove it surpasses native across agentic coding scenarios.
 - Status: context-override implemented, synced, and verified live (small paired run: plugin 8795 chars / 5 topics / per-topic blocked lines vs pure 1924 native). Exhaustive evaluation underway: synthetic corpus v3 written (realistic part shapes fixing the 500s), stale markers cleaned, hist clones need regeneration, headless sweep awaiting re-run.
 - What to do next:
   1. Run `bun /tmp/opencode/gen_synthetic_v3.ts` to regenerate all 7 synthetics with `state.time` on tool parts.

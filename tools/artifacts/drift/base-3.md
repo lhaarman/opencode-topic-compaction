@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Repo:** `/workspaces/opencode-graph-plugin` — an opencode plugin that replaces/augments opencode's native linear compaction with **community-based compaction**: clustering session messages into topic communities and producing structured `# TOPIC <n>: <label>` + `# STATE` summaries instead of a single blurred narrative.
+**Repo:** `/workspaces/opencode-topic-compaction` — an opencode plugin that replaces/augments opencode's native linear compaction with **community-based compaction**: clustering session messages into topic communities and producing structured `# TOPIC <n>: <label>` + `# STATE` summaries instead of a single blurred narrative.
 
 **Architecture:** `src/` is source of truth; `.opencode/plugins/` must stay byte-identical (AGENTS.md). Modules: `graph-model.ts` (fetch/window/nodes/edges), `graph-cluster.ts` (community detection), `graph-compaction.ts` (override context builder), `graph-render.ts` (PNG), `graph-theme.ts`, `graph-plugin.ts` (entry).
 

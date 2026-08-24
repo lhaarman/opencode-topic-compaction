@@ -34,13 +34,13 @@
 - restartServes(): kills pids from /tmp/opencode/serve-4399.pid & serve-4400.pid, respawns 4399 normal + 4400 --pure, writes pid files, sleep 4s.
 - blocked: none so far
 
-# TOPIC 6: opencode-graph-plugin/compaction-report.md (190 nodes)
+# TOPIC 6: opencode-topic-compaction/compaction-report.md (190 nodes)
 - Rewritten as CURRENT-STATE evaluation only (user: no improvement history/baselines/deltas).
 - Sections: Method (paired serves 4399 plugin vs 4400 --pure, cloned sessions, POST /session/{id}/summarize, time-based capture); U1–U8 table with sizes+latencies+verdicts; fusion U9/U11 incl. verbatim blocker survival; U10 large-window; latency profile; limitations (§6.1 topic-body currency sharp edge: bodies said "no activity" while STATE had edits; provider sensitivity; races ref); verdict recommends as-is, queues recurrency refinement.
 - Subject line: "the `graph-compaction` plugin's compaction hook".
 - blocked: none so far
 
-# TOPIC 7: opencode-graph-plugin/agent-feedback.txt (10 nodes)
+# TOPIC 7: opencode-topic-compaction/agent-feedback.txt (10 nodes)
 - Feedback items: (1) fix U9 regression, (2) live blocker carry-forward, (3) degradation characterization 5–10 rounds, (4) U10 timing, (5) document vanish race upstream, (6) ship.
 - Status: (2) done via U11; (5) done via session-vanish-race.md; (4) latency tables in report, fresh U10 pair deferred; (1) root-caused deeper than feedback assumed — real bugs were previousSummary reading empty user-marker, "(user message)" placeholder pollution, slice(lastCompaction) ignoring scanEnd — fixed; U9-r2 live re-validation pending (provider stalls). (3) not started (needs eval_degrade.ts).
 - blocked: none so far

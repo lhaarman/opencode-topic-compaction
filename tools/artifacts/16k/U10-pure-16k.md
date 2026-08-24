@@ -2,7 +2,7 @@
 
 ## 概述
 
-本次会话涵盖了 `/workspaces/opencode-graph-plugin` 的完整开发生命周期，这是一个 opencode 插件，它通过 `experimental.session.compacting` 钩子提供 **社区（主题结构化）压缩**，作为 opencode 原生线性压缩的替代方案。工作流程从代码学习开始，经历了多次重构、一次完整的聚类重写、实时压缩调试（包括逆向工程打包的 opencode 二进制文件）、无头实验基础设施，以及针对合成会话和克隆真实会话的详尽配对评估。
+本次会话涵盖了 `/workspaces/opencode-topic-compaction` 的完整开发生命周期，这是一个 opencode 插件，它通过 `experimental.session.compacting` 钩子提供 **社区（主题结构化）压缩**，作为 opencode 原生线性压缩的替代方案。工作流程从代码学习开始，经历了多次重构、一次完整的聚类重写、实时压缩调试（包括逆向工程打包的 opencode 二进制文件）、无头实验基础设施，以及针对合成会话和克隆真实会话的详尽配对评估。
 
 ## 关键文件与当前状态
 

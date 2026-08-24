@@ -35,7 +35,7 @@
 - U10 attempt-2: plugin 10491 ch (override did not fire — pre-fix bug) + pure 7321 ch @115 s; an earlier attempt died to the vanish race.
 - blocked: none so far
 
-# TOPIC 6: opencode-graph-plugin/compaction-report.md
+# TOPIC 6: opencode-topic-compaction/compaction-report.md
 - Rewritten as a **current-state evaluation only** per explicit user instruction (no improvement history, no v1 baselines/deltas): §1 method, §2 U1–U8 table with per-arm latency, §3 fusion results (U9/U11), §4 U10 large-window, §5 latency profile, §6 known limitations, §7 verdict recommending as-is use.
 - Rename executed: plugin `id: "graph-compaction"`; tool `session_graph_png` → `session_graph`; header comment in `src/graph-plugin.ts` leads with compaction; comment in `src/graph-model.ts:131` updated; `src/test_graph-plugin.ts` assertion + header updated.
 - Docs updated: `AGENTS.md` intro now compaction-led ("`graph-compaction` … topic/community-based compaction … plus session-graph PNG rendering") and its E2E step fixed to the copy-first flow (`cp src/test_graph-plugin.ts .opencode/plugins/ && bun … && rm …`) since the SDK resolves only under `.opencode/node_modules`; `compaction-report.md` subject line → "the `graph-compaction` plugin".
@@ -43,7 +43,7 @@
 - Full E2E chat turn failed with provider 500 (`err_e1633f63`) — unrelated to rename; tool registration was the assertion that mattered.
 - blocked: none so far
 
-# TOPIC 7: opencode-graph-plugin/agent-feedback.txt
+# TOPIC 7: opencode-topic-compaction/agent-feedback.txt
 - Feedback item dispositions: (1) U9 regression → root-caused deeper than the agent's suggestion (stub markers + placeholder pollution + slice bug) and fixed; (2) live blocker carry-forward → proven via U11; (3) degradation characterization → deferred, needs `eval_degrade.ts` script + 10 rounds; (4) U10 timing → latency profile in report, fresh post-fix pair deferred; (5) vanish race → `session-vanish-race.md` upstream-ready draft written; (6) ship → checklist green (tests/sync/typecheck).
 - Standing user constraint: reports must evaluate the plugin as it is right now — no progress log, no improvement history.
 - Deferred queue: degradation loop (script + 10 rounds), U9-plugin-r2 retry (~5 min when provider cooperates), U10 fresh post-fix pair, optional §6.1 refinement (topic-map labels from most recent segment), local `qwen3.8-9b` sweep.

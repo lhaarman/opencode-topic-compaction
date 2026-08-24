@@ -62,7 +62,7 @@ blocked: none so far
 
 # STATE
 
-- Overall goal: evolve `/workspaces/opencode-graph-plugin` so community-based compaction produces topic-structured summaries (`# TOPIC n` + `# STATE`) that surpass opencode's native linear compaction, with a guaranteed never-worse fallback.
+- Overall goal: evolve `/workspaces/opencode-topic-compaction` so community-based compaction produces topic-structured summaries (`# TOPIC n` + `# STATE`) that surpass opencode's native linear compaction, with a guaranteed never-worse fallback.
 - Status: method complete and live-validated — late-position override works (e1/e2b/e3 TOPIC successes on `x-preview-f-free`), every observed failure mode has a guard (window collapse, length overflow, junk labels, staleness, degenerate windows), 30/30 unit tests pass, typecheck clean except the known bun-only `import.meta.dir`, `src/` ↔ `.opencode/plugins/` byte-identical. Exhaustive corpus fully staged: 13 windows as plugin/pure clone pairs.
 - What to do next:
   1. Run headless `x-preview-f-free` compactions on the 7 synthetic clone pairs: `POST http://127.0.0.1:4399/session/<sid>/summarize` (plugin) and `http://127.0.0.1:4400/session/<sid>/summarize` (pure); session ids are in the DB under slugs `x-{rare,decision,causal,small,parallel,blocked,large}-{plugin,pure}`.

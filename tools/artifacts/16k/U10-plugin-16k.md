@@ -48,7 +48,7 @@
 
 # STATE
 
-- Overall goal: evolve `/workspaces/opencode-graph-plugin` so community-based compaction surpasses native opencode compaction, evidenced by a maintainer-grade markdown report with required columns (problem, context before, context after for plugin and base, comparison improve/unlock/worse/gap) plus 1–100 scores (Segmentation 20 / Rare 15 / Decision WHY 15 / Causal 15 / Blocked-Next 10 / Currency 10 / Scannability 10 / Cost 5 + 0.14 tiebreak epsilon).
+- Overall goal: evolve `/workspaces/opencode-topic-compaction` so community-based compaction surpasses native opencode compaction, evidenced by a maintainer-grade markdown report with required columns (problem, context before, context after for plugin and base, comparison improve/unlock/worse/gap) plus 1–100 scores (Segmentation 20 / Rare 15 / Decision WHY 15 / Causal 15 / Blocked-Next 10 / Currency 10 / Scannability 10 / Cost 5 + 0.14 tiebreak epsilon).
 - Status: explicitness iteration complete and synced (tests 30/30, typecheck clean except known graph-render.ts `import.meta.dir` bun-only error); 18-session sweep corpus staged; local qwen runs deferred pending user confirmation of LM Studio setup.
 - Blocked: none so far.
 - What to do next:

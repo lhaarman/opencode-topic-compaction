@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidelines for developing this repo: `opencode-topic-compaction`, a standalone opencode plugin (plugin id: `opencode-topic-compaction`)
+Guidelines for developing this repo: `opencode-topic-compaction`, a standalone opencode plugin
 providing topic/community-based compaction via opencode's compacting hook.
 The plugin is self-contained and self-documenting; these notes cover only how
 to work on the code here.

@@ -2,11 +2,11 @@
 
 ## Overall Goal
 
-Evolve `/workspaces/opencode-graph-plugin` so its `experimental.session.compacting` hook produces **community-based, topic-structured compaction summaries** (`# TOPIC n: <label>` sections + global `# STATE`) that surpass opencode's native linear compaction (`## Objective / Important Details / Work State / Next Move / Relevant Files`), while **never making compaction worse** (graceful fallback to native). Currently executing an **exhaustive quality assessment** across 13 windows × 2 conditions (plugin `:4399` vs pure `:4400`) with `x-preview-f-free`; **local qwen3.8-9b runs are deferred** — user explicitly said *"For the local model, keep those for the last. Come back to me before starting those."*
+Evolve `/workspaces/opencode-topic-compaction` so its `experimental.session.compacting` hook produces **community-based, topic-structured compaction summaries** (`# TOPIC n: <label>` sections + global `# STATE`) that surpass opencode's native linear compaction (`## Objective / Important Details / Work State / Next Move / Relevant Files`), while **never making compaction worse** (graceful fallback to native). Currently executing an **exhaustive quality assessment** across 13 windows × 2 conditions (plugin `:4399` vs pure `:4400`) with `x-preview-f-free`; **local qwen3.8-9b runs are deferred** — user explicitly said *"For the local model, keep those for the last. Come back to me before starting those."*
 
 ## Repo Layout & Commands
 
-- Source of truth: `/workspaces/opencode-graph-plugin/src/` — `graph-model.ts`, `graph-cluster.ts`, `graph-compaction.ts`, `graph-theme.ts`, `graph-render.ts`, `graph-plugin.ts`, `test_cluster.ts` (30 checks), `test_graph-plugin.ts`
+- Source of truth: `/workspaces/opencode-topic-compaction/src/` — `graph-model.ts`, `graph-cluster.ts`, `graph-compaction.ts`, `graph-theme.ts`, `graph-render.ts`, `graph-plugin.ts`, `test_cluster.ts` (30 checks), `test_graph-plugin.ts`
 - Sync (byte-identical per AGENTS.md): `cp src/graph-model.ts src/graph-cluster.ts src/graph-compaction.ts src/graph-theme.ts src/graph-render.ts src/graph-plugin.ts .opencode/plugins/ && diff -r src .opencode/plugins --exclude=Roboto-Regular.ttf --exclude=test_cluster.ts --exclude=test_graph-plugin.ts && echo "SYNC OK"`
 - Typecheck (from `.opencode/`): `bunx tsc --ignoreConfig --noEmit --strict --noUncheckedIndexedAccess --noImplicitOverride --allowImportingTsExtensions --target ES2022 --module ESNext --moduleResolution bundler --esModuleInterop --skipLibCheck --types node plugins/*.ts` — only expected error: `graph-render.ts import.meta.dir` (bun-only)
 - Tests: `bun src/test_cluster.ts` (30/30 pass)
@@ -56,7 +56,7 @@ Historical windows: e1 `ses_wwbb71trwed0nrkiq59p`, e2 `ses_srtz7csojkgnz5h89kc1`
 
 ## Next Steps
 
-1. Start `opencode serve --port 4399` (plugin) and `--pure --port 4400` from `/workspaces/opencode-graph-plugin` (verify `module-loaded` in trace; NOTE: `pkill -f "opencode serve"` hangs the shell — kill by PID)
+1. Start `opencode serve --port 4399` (plugin) and `--pure --port 4400` from `/workspaces/opencode-topic-compaction` (verify `module-loaded` in trace; NOTE: `pkill -f "opencode serve"` hangs the shell — kill by PID)
 2. Run paired `POST /session/{id}/summarize {"providerID":"opencode","modelID":"x-preview-f-free"}` for all 7 x-*-plugin (on 4399) and x-*-pure (on 4400); poll DB for new `mode:compaction` text; save to `/tmp/opencode/result_<tag>.md`
 3. Score each pair 1–100 (rubric: Segmentation 20/Rare 15/Decision 15/Causal 15/Blocked-Next 10/Currency 10/Scannability 10/Cost 5 + tie-break epsilon)
 4. Build `/tmp/opencode/exhaustive-report.md`: table with columns `problem | context before | context after (plugin) | context after (pure) | comparison (improve/unlock/worse/gap) | scores | evidence`
