@@ -1,0 +1,14 @@
+# Dependencies, build artifacts and local state
+node_modules
+package-lock.json
+*.tsbuildinfo
+
+# opencode we can add manually if we desire so
+.opencode/
+
+# tools 
+tools/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

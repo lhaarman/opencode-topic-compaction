@@ -1,4 +1,5 @@
 {
+  "name": "opencode-topic-compaction",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
