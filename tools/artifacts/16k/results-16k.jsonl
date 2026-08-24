@@ -1,0 +1,63 @@
+{"kase":"U9","arm":"plugin","round":"r2","ok":true,"chars":1924,"startsTopic":true,"secs":0,"note":"extracted from DB after tmp-wipe; post-recency build; sharp edge gone"}
+{"kase":"DEG","round":1,"arm":"plugin","ok":true,"chars":1659,"secs":45,"startsTopic":true}
+{"kase":"DEG","round":1,"arm":"pure","ok":true,"chars":1491,"secs":24,"startsTopic":false}
+{"kase":"DEG","round":2,"arm":"plugin","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":2,"arm":"pure","ok":true,"chars":2189,"secs":43,"startsTopic":false}
+{"kase":"DEG","round":3,"arm":"plugin","ok":true,"chars":2402,"secs":61,"startsTopic":true}
+{"kase":"DEG","round":3,"arm":"pure","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":4,"arm":"plugin","ok":true,"chars":2654,"secs":55,"startsTopic":true}
+{"kase":"DEG","round":4,"arm":"pure","ok":true,"chars":2332,"secs":34,"startsTopic":false}
+{"kase":"DEG","round":5,"arm":"plugin","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":5,"arm":"pure","ok":true,"chars":2369,"secs":63,"startsTopic":false}
+{"kase":"DEG","round":6,"arm":"plugin","ok":true,"chars":2502,"secs":52,"startsTopic":true}
+{"kase":"DEG","round":6,"arm":"pure","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":7,"arm":"plugin","ok":true,"chars":2645,"secs":30,"startsTopic":true}
+{"kase":"DEG","round":7,"arm":"pure","ok":true,"chars":2413,"secs":66,"startsTopic":false}
+{"kase":"DEG","round":8,"arm":"plugin","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":8,"arm":"pure","ok":true,"chars":2484,"secs":29,"startsTopic":false}
+{"kase":"DEG","round":9,"arm":"plugin","ok":true,"chars":2680,"secs":49,"startsTopic":true}
+{"kase":"DEG","round":9,"arm":"pure","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"DEG","round":10,"arm":"plugin","ok":true,"chars":2910,"secs":31,"startsTopic":true}
+{"kase":"DEG","round":10,"arm":"pure","ok":false,"chars":0,"secs":240,"startsTopic":false}
+{"kase":"U10","arm":"plugin","round":"r1","ok":true,"secs":223,"chars":6817,"startsTopic":true}
+{"kase":"U10","arm":"pure","round":"r1","ok":true,"secs":198,"chars":3540,"startsTopic":false}
+{"kase":"U10","type":"case-summary","beforeMsgs":880,"beforeTok":306421,"pluginChars":6817,"pureChars":3540,"pluginOk":true,"pureOk":true,"wallSecs":421}
+{"kase":"U1","arm":"plugin","round":"r1","ok":false,"attempt":1,"err":"timeout (300s)"}
+{"kase":"U1","arm":"plugin","round":"r1","ok":true,"secs":19,"chars":641,"startsTopic":false}
+{"kase":"U1","arm":"pure","round":"r1","ok":true,"secs":22,"chars":923,"startsTopic":false}
+{"kase":"U1","type":"case-summary","beforeMsgs":6,"beforeTok":399,"pluginChars":641,"pureChars":923,"pluginOk":true,"pureOk":true,"wallSecs":42}
+{"kase":"U2","arm":"plugin","round":"r1","ok":true,"secs":33,"chars":1442,"startsTopic":false}
+{"kase":"U2","arm":"pure","round":"r1","ok":true,"secs":20,"chars":790,"startsTopic":false}
+{"kase":"U2","type":"case-summary","beforeMsgs":23,"beforeTok":1556,"pluginChars":1442,"pureChars":790,"pluginOk":true,"pureOk":true,"wallSecs":52}
+{"kase":"U3","arm":"plugin","round":"r1","ok":true,"secs":31,"chars":1558,"startsTopic":true}
+{"kase":"U3","arm":"pure","round":"r1","ok":true,"secs":23,"chars":1182,"startsTopic":false}
+{"kase":"U3","type":"case-summary","beforeMsgs":31,"beforeTok":2105,"pluginChars":1558,"pureChars":1182,"pluginOk":true,"pureOk":true,"wallSecs":54}
+{"kase":"U4","arm":"plugin","round":"r1","ok":true,"secs":29,"chars":1287,"startsTopic":true}
+{"kase":"U4","arm":"pure","round":"r1","ok":true,"secs":24,"chars":1055,"startsTopic":false}
+{"kase":"U4","type":"case-summary","beforeMsgs":28,"beforeTok":1901,"pluginChars":1287,"pureChars":1055,"pluginOk":true,"pureOk":true,"wallSecs":53}
+{"kase":"U5","arm":"plugin","round":"r1","ok":true,"secs":26,"chars":1315,"startsTopic":false}
+{"kase":"U5","arm":"pure","round":"r1","ok":true,"secs":33,"chars":1636,"startsTopic":false}
+{"kase":"U5","type":"case-summary","beforeMsgs":24,"beforeTok":1628,"pluginChars":1315,"pureChars":1636,"pluginOk":true,"pureOk":true,"wallSecs":59}
+{"kase":"U6","arm":"plugin","round":"r1","ok":true,"secs":34,"chars":1526,"startsTopic":true}
+{"kase":"U6","arm":"pure","round":"r1","ok":true,"secs":32,"chars":1568,"startsTopic":false}
+{"kase":"U6","type":"case-summary","beforeMsgs":18,"beforeTok":1219,"pluginChars":1526,"pureChars":1568,"pluginOk":true,"pureOk":true,"wallSecs":66}
+{"kase":"U7","arm":"plugin","round":"r1","ok":true,"secs":29,"chars":1224,"startsTopic":false}
+{"kase":"U7","arm":"pure","round":"r1","ok":true,"secs":27,"chars":1162,"startsTopic":false}
+{"kase":"U7","type":"case-summary","beforeMsgs":8,"beforeTok":536,"pluginChars":1224,"pureChars":1162,"pluginOk":true,"pureOk":true,"wallSecs":56}
+{"kase":"U8","arm":"plugin","round":"r1","ok":true,"secs":31,"chars":1320,"startsTopic":true}
+{"kase":"U8","arm":"pure","round":"r1","ok":true,"secs":22,"chars":1140,"startsTopic":false}
+{"kase":"U8","type":"case-summary","beforeMsgs":35,"beforeTok":2378,"pluginChars":1320,"pureChars":1140,"pluginOk":true,"pureOk":true,"wallSecs":54}
+{"kase":"U9","arm":"plugin","round":"r1","ok":true,"secs":29,"chars":1161,"startsTopic":true}
+{"kase":"U9","arm":"pure","round":"r1","ok":true,"secs":21,"chars":879,"startsTopic":false}
+{"kase":"U9","arm":"plugin","round":"r2","ok":false,"attempt":1,"err":"timeout (300s)"}
+{"kase":"U9","arm":"plugin","round":"r2","ok":false,"attempt":2,"err":"timeout (300s)"}
+{"kase":"U9","arm":"pure","round":"r2","ok":true,"secs":31,"chars":1872,"startsTopic":false}
+{"kase":"U9","type":"blocker-carry","blockersInR1":[],"carriedInR2":[]}
+{"kase":"U11","arm":"plugin","round":"r1","ok":true,"secs":41,"chars":1850,"startsTopic":true}
+{"kase":"U11","arm":"pure","round":"r1","ok":true,"secs":31,"chars":1630,"startsTopic":false}
+{"kase":"U11","arm":"plugin","round":"r2","ok":false,"attempt":1,"err":"timeout (300s)"}
+{"kase":"U11","arm":"plugin","round":"r2","ok":false,"attempt":2,"err":"timeout (300s)"}
+{"kase":"U11","arm":"pure","round":"r2","ok":true,"secs":32,"chars":1539,"startsTopic":false}
+{"kase":"U11","type":"blocker-carry","blockersInR1":["HTTP/1.1 401 Unauthorized — endpoint requires authentication (API key or valid b","HTTP/1.1 401 Unauthorized — same auth failure as before; no new token or key obt"],"carriedInR2":[]}
+{"kase":"U9","arm":"plugin","round":"r2","ok":true,"chars":1870,"startsTopic":true,"secs":-1,"via":"fusion-resume"}
+{"kase":"U11","arm":"plugin","round":"r2","ok":true,"chars":1921,"startsTopic":true,"secs":-1,"via":"fusion-resume"}
