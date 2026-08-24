@@ -6,9 +6,6 @@ package-lock.json
 # opencode we can add manually if we desire so
 .opencode/
 
-# tools 
-tools/
-
 # OS/editor noise
 .DS_Store
 Thumbs.db
