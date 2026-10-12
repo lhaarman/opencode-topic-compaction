@@ -152,20 +152,23 @@ function topicsByGaps(nodes: GraphNode[]): Topic[] {
   return topics
 }
 
-// The override appended AFTER opencode's entire compaction prompt via the
-// compacting hook's `output.context` — hook context is joined last in the
-// assembled user message, so this block gets the final word. Position is the
-// whole design: opencode only appends raw history when `output.prompt` is
-// set, which left our instructions before the history and the model continued
-// the conversation instead of summarizing (observed 15:05 failure). On the
-// native path the history stays first, inside <conversation>, and our block
-// explicitly amends the template it just read. A window worth overriding must
-// yield at least two topics — clustering first, silence gaps as fallback. One
-// topic means the native linear template is already the right shape, and the
-// default compaction runs instead.
-export function compactionContext(nodes: GraphNode[], previousSummary?: string): string | undefined {
+// The summarization prompt used when the plugin owns the compaction. V2 rejects
+// a model summary that lacks its native section headings, so the plugin instead
+// generates the summary itself and hands it to the hook's `result` verbatim;
+// this block is therefore the whole instruction, with no native template. A
+// window worth overriding must yield at least two topics — clustering first,
+// silence gaps as fallback. One topic means the native linear template is
+// already the right shape, and the default compaction runs instead.
+export function compactionContext(
+  nodes: GraphNode[],
+  previousSummary?: string,
+  // Best-effort reporter so the caller can observe the decision (topics found
+  // vs yield-to-native) without this module doing side effects itself.
+  report?: (topics: number) => void,
+): string | undefined {
   let topics = topicsOf(nodes)
   if (topics.length <= 1) topics = topicsByGaps(nodes)
+  report?.(topics.length)
   if (topics.length < 2) return undefined
 
   // Communities dominated by the same file share a label; keep the headers
@@ -226,8 +229,7 @@ export function compactionContext(nodes: GraphNode[], previousSummary?: string):
   return [
     "You are a summarization agent. Summarize the <conversation> above so another coding agent can continue.",
     "",
-    "IMPORTANT OVERRIDE: disregard the <template> section above and output exactly this structure",
-    "instead, keeping order unchanged:",
+    "Output exactly this structure, in order:",
     "",
     "# TOPIC <n>: <label>",
     "",
@@ -244,6 +246,7 @@ export function compactionContext(nodes: GraphNode[], previousSummary?: string):
     "",
     "Rules:",
     "- Keep every section, even when thin. Aim for ~5 bullets per topic; beyond 5 only if critical.",
+    "- Always output a `# TOPIC <n>:` section for every topic in the map; skipping one loses that work.",
     "- Use terse bullets, not prose paragraphs. One fact per bullet; never restate the same fact across topics or sections.",
     "- Preserve exact file paths, symbols, commands, error strings, URLs, and identifiers when known.",
     "- The final turns are the newest truth: reconcile every section against them and drop anything",
@@ -254,7 +257,7 @@ export function compactionContext(nodes: GraphNode[], previousSummary?: string):
     "TOPIC map:",
     map,
     "",
-    'Output ONLY the summary text in the structure above, starting with "# TOPIC 1:".',
+    'Output ONLY the summary text, starting with "# TOPIC 1:".',
     "Do not continue the conversation. Do not respond to any questions in it.",
   ].join("\n")
 }

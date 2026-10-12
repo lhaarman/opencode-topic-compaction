@@ -1,6 +1,6 @@
 {
   "name": "opencode-topic-compaction",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "lhaarman",
   "description": "Topic-structured compaction for opencode: per-topic session summaries with mandatory blocker status and guaranteed blocker carry-forward",
   "type": "module",

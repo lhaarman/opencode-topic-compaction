@@ -139,7 +139,8 @@ function communitiesOf(chains: Part[][]): Record<string, number> {
     { id: "f2", kind: "file", content: "server/http.ts", group: 1 },
   ]
   const bare = compactionContext(nodes)
-  check("context overrides the native template", bare?.includes("disregard the <template> section above") ?? false)
+  check("context owns the compaction structure", bare?.includes("Output exactly this structure") ?? false)
+  check("context omits the native template headings", !(bare?.includes("## Objective") ?? true))
   check("context defines TOPIC header form", bare?.includes("# TOPIC <n>: <label>") ?? false)
   check("context defines STATE epilogue", bare?.includes("# STATE") ?? false)
   check("context embeds the topic map", bare?.includes("TOPIC 1: session/index.ts") ?? false)

@@ -1,7 +1,7 @@
 # opencode-topic-compaction
 
-An [opencode](https://opencode.ai) plugin: when opencode compacts a session,
-this plugin appends a late-position override to the compaction prompt so the
+An [opencode](https://opencode.ai) V2 plugin: when opencode compacts a session,
+this plugin adds a topic-structured override to the compaction request so the
 model summarizes **per topic** instead of one linear stream. Topics come
 from clustering the session's actual file activity; every topic carries an
 explicit `blocked:` status, and open blockers are guaranteed to survive
@@ -12,9 +12,11 @@ across successive compactions.
 The plugin is conservative by design — it upgrades compaction only where it
 clearly applies and steps aside everywhere else:
 
-- **≥2 clustered topics** → per-topic summary (`# TOPIC n:` with mandatory
-  `blocked:` keys + a global `# STATE`). Below that threshold → opencode's
-  native template, byte-for-byte unchanged.
+- **≥2 clustered topics** → the plugin generates the summary itself (a pure
+  `# TOPIC n:` body with mandatory `blocked:` keys + a global `# STATE`) and
+  hands it to opencode via the hook's `result`, so no native headings appear.
+  Below that threshold, or if generation fails, → opencode's native template,
+  byte-for-byte unchanged.
 - **Recency parity**: like base, the newest messages stay out of the summary
   (default ~8k tokens of raw recent context; set `GRAPH_CONTEXT_TOKENS` to your
   model's true window and the tail shrinks to 40% of it). A window that fits
@@ -27,25 +29,27 @@ clearly applies and steps aside everywhere else:
 ## How it works
 
 ```
-session messages ──► topics-model ──► topics-cluster ──► topics-compaction ──► hook context
-                     nodes+edges      causal chains     per-topic prompt      (appended LAST,
-                     +files           merged by file    + TOPIC map +         wins over native
-                                      overlap           fusion rules          template)
+session context ──► topics-model ──► topics-cluster ──► topics-compaction ──► event.result
+(ctx.session)       nodes+edges      causal chains     TOPIC map + fusion    (plugin-generated
+                    +files           merged by file    rules                 # TOPIC summary)
+                                     overlap
 ```
 
-- `topics-model.ts` — turns session entries into nodes/edges; resolves the
-  active window after the last compaction boundary, splits off the raw recent
-  tail, and extracts the prior summary. Falls back to reading opencode's
-  SQLite store when the client API returns a truncated view.
+- `topics-model.ts` — reads the session's model-visible window via
+  `ctx.session.context()` (V2's `session_message` store), turns it into
+  nodes/edges, resolves the active window after the last compaction boundary,
+  splits off the raw recent tail, and extracts the prior summary.
 - `topics-cluster.ts` — pure topic detection: user messages open chains; chains
   merge when their weighted file overlap (edit ≫ read) clears a threshold;
   discussion-only chains ride along.
-- `topics-compaction.ts` — builds the override: role line, "disregard the
-  native template" amendment, `# TOPIC n:` spec with mandatory `blocked:` keys,
-  a global `# STATE`, rules, optional `<prior-summary>` fusion with blocker
-  carry-forward, and the topic map. Returns nothing (<2 topics → native path).
-- `topics-plugin.ts` — registers the compacting hook; any failure falls back
-  to native compaction silently.
+- `topics-compaction.ts` — builds the summarization prompt: role line, the
+  `# TOPIC n:` spec with mandatory `blocked:` keys, a global `# STATE`, rules,
+  optional `<prior-summary>` fusion with blocker carry-forward, and the topic
+  map. Returns nothing (<2 topics → native path).
+- `topics-plugin.ts` — the V2 entry (`Plugin.define`): registers the
+  `compaction` hook. On ≥2 topics it serializes the transcript, generates the
+  summary via `ctx.generate.text`, and sets `event.result`; otherwise, or on any
+  failure, it falls back to native compaction silently.
 
 ## Install
 
@@ -55,7 +59,7 @@ installs it automatically at startup:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-topic-compaction"]
+  "plugins": ["opencode-topic-compaction"]
 }
 ```
 
@@ -63,13 +67,32 @@ installs it automatically at startup:
   that project only.
 - **Global**: put it in `~/.config/opencode/opencode.json` — active everywhere.
 
-**Manual** — copy the plugin files (`src/topics-*.ts`) into a plugin directory:
+**Manual** — copy the plugin into a plugin **directory** (V2 loads `.opencode/plugins/<name>/index.ts`,
+not loose `.ts` files):
+
+```
+.opencode/plugins/topic-compaction/
+  index.ts            # = src/topics-plugin.ts
+  topics-model.ts
+  topics-cluster.ts
+  topics-compaction.ts
+```
 
 - `.opencode/plugins/` — project-level, or
 - `~/.config/opencode/plugins/` — global
 
-No other setup. Manual copies need no `plugin` config entry; files there load
-automatically.
+No `plugins` config entry is needed; directories there load automatically.
+
+## Verify it is loaded
+
+```bash
+opencode api get '/api/plugin?location[directory]=<dir>'   # topic-compaction: status active
+tail -f ~/.local/share/opencode/log/topic-compaction.log    # loads + each compaction decision
+```
+
+Each compaction logs `N topics → topic summary generated (X chars)`,
+`N topic(s) → yielding to native template`, or the error that forced a
+fallback — so the plugin's behavior is observable instead of silent.
 
 ## Use
 
